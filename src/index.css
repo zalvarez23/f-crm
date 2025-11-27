@@ -1,6 +1,39 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Hurme Geometric Sans Font Family */
+@font-face {
+  font-family: 'Hurme Geometric Sans';
+  src: url('/fonts/HurmeGeometricSans4-Light-BT2MAy7u.woff') format('woff');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hurme Geometric Sans';
+  src: url('/fonts/HurmeGeometricSans4-Regular-D3xZP9Q_.woff') format('woff');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hurme Geometric Sans';
+  src: url('/fonts/HurmeGeometricSans4-SemiBold-BJ-TmGGi.woff') format('woff');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Hurme Geometric Sans';
+  src: url('/fonts/HurmeGeometricSans4-Bold-989kDMZU.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -114,7 +147,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Hurme Geometric Sans', system-ui, -apple-system, sans-serif;
+    letter-spacing: 0.04em;
   }
 }
