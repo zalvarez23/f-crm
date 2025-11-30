@@ -1,31 +1,31 @@
-export default function DashboardPage() {
-    return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-                <p className="text-muted-foreground">
-                    Bienvenido al panel de control del CRM
-                </p>
-            </div>
+import { useAuth } from "@/shared/context/auth-context"
+import { SupervisorDashboard } from "./components/supervisor-dashboard"
+import { ExecutiveDashboard } from "./components/executive-dashboard"
+import { LegalDashboard } from "./components/legal-dashboard"
+import { CommercialDashboard } from "./components/commercial-dashboard"
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-lg border bg-card p-6">
-                    <div className="text-2xl font-bold">0</div>
-                    <p className="text-sm text-muted-foreground">Total Clientes</p>
-                </div>
-                <div className="rounded-lg border bg-card p-6">
-                    <div className="text-2xl font-bold">0</div>
-                    <p className="text-sm text-muted-foreground">Nuevos este mes</p>
-                </div>
-                <div className="rounded-lg border bg-card p-6">
-                    <div className="text-2xl font-bold">0</div>
-                    <p className="text-sm text-muted-foreground">Reportes generados</p>
-                </div>
-                <div className="rounded-lg border bg-card p-6">
-                    <div className="text-2xl font-bold">100%</div>
-                    <p className="text-sm text-muted-foreground">Tasa de éxito</p>
-                </div>
-            </div>
-        </div>
-    )
+export default function DashboardPage() {
+  const { user } = useAuth()
+
+  if (!user) {
+    return <div>Loading...</div>
+  }
+
+  // Show Executive Dashboard for executives
+  if (user.role === 'executive') {
+    return <ExecutiveDashboard />
+  }
+
+  // Show Legal Dashboard for legal users
+  if (user.role === 'legal') {
+    return <LegalDashboard />
+  }
+
+  // Show Commercial Dashboard for commercial users
+  if (user.role === 'commercial') {
+    return <CommercialDashboard />
+  }
+
+  // Show Supervisor Dashboard for supervisors and administrators
+  return <SupervisorDashboard />
 }

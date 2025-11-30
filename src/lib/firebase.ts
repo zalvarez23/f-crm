@@ -1,7 +1,7 @@
-import { initializeApp } from "firebase/app"
+import { initializeApp, getApps } from "firebase/app"
 import { getFirestore } from "firebase/firestore"
 import { getStorage } from "firebase/storage"
-import { getAnalytics } from "firebase/analytics"
+import { getAuth } from "firebase/auth"
 
 // Firebase configuration
 const firebaseConfig = {
@@ -11,14 +11,14 @@ const firebaseConfig = {
     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
     appId: import.meta.env.VITE_FIREBASE_APP_ID,
-    measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 }
-// Initialize Firebase
-const app = initializeApp(firebaseConfig)
+
+// Initialize Firebase only if it hasn't been initialized yet
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
 // Initialize services
 export const db = getFirestore(app)
 export const storage = getStorage(app)
-export const analytics = getAnalytics(app)
+export const auth = getAuth(app)
 
 export default app
