@@ -3,6 +3,9 @@ import { SupervisorDashboard } from "./components/supervisor-dashboard"
 import { ExecutiveDashboard } from "./components/executive-dashboard"
 import { LegalDashboard } from "./components/legal-dashboard"
 import { CommercialDashboard } from "./components/commercial-dashboard"
+import { CloserDashboard } from "./components/closer-dashboard"
+import { AppraisalDashboard } from "./components/appraisal-dashboard"
+import { InvestmentDashboard } from "./components/investment-dashboard"
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -11,8 +14,8 @@ export default function DashboardPage() {
     return <div>Loading...</div>
   }
 
-  // Show Executive Dashboard for executives
-  if (user.role === 'executive') {
+  // Show Executive Dashboard for loan executives
+  if (user.role === 'loan_executive') {
     return <ExecutiveDashboard />
   }
 
@@ -24,6 +27,21 @@ export default function DashboardPage() {
   // Show Commercial Dashboard for commercial users
   if (user.role === 'commercial') {
     return <CommercialDashboard />
+  }
+
+  // Show Closer Dashboard for closer users
+  if (user.role === 'closer') {
+    return <CloserDashboard />
+  }
+
+  // Show Appraisal Dashboard for appraisal managers
+  if (user.role === 'appraisal_manager') {
+    return <AppraisalDashboard />
+  }
+
+  // Show Investment Dashboard for investment executives
+  if (user.role === 'investment_executive') {
+    return <InvestmentDashboard />
   }
 
   // Show Supervisor Dashboard for supervisors and administrators

@@ -60,14 +60,8 @@ export function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
                 <TableCell className="font-medium">{user.displayName || "Sin nombre"}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>
-                  <Badge variant="outline" className={
-                    user.role === 'admin' || user.role === 'administrator' ? 'bg-red-100 text-red-800 border-red-200' :
-                    user.role === 'supervisor' ? 'bg-blue-100 text-blue-800 border-blue-200' :
-                    'bg-green-100 text-green-800 border-green-200'
-                  }>
-                    {user.role === 'administrator' ? 'Admin' : 
-                     user.role === 'supervisor' ? 'Supervisor' : 
-                     user.role === 'executive' ? 'Ejecutivo' : user.role}
+                  <Badge variant="outline">
+                    {user.role}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">

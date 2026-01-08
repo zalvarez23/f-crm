@@ -9,6 +9,7 @@ import ReportsPage from "./features/reports/reports-page"
 import LoginPage from "./features/auth/pages/login-page"
 import UsersPage from "./features/users/pages/users-page"
 import { CallCenterPage } from "./features/call-center/pages/call-center-page"
+import { AppraisalReportsView } from "./features/dashboard/components/appraisal-reports-view"
 
 function App() {
   return (
@@ -41,6 +42,14 @@ function App() {
                 element={
                   <ProtectedRoute allowedRoles={['supervisor', 'administrator']}>
                     <CallCenterPage />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/tasaciones" 
+                element={
+                  <ProtectedRoute allowedRoles={['investment_executive', 'supervisor']}>
+                    <AppraisalReportsView />
                   </ProtectedRoute>
                 } 
               />

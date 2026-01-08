@@ -32,10 +32,10 @@ import type { UserProfile } from "@/shared/types/user.types"
 import { usersService } from "../services/users.service"
 
 const formSchema = z.object({
-  displayName: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").optional(),
-  role: z.enum(["admin", "supervisor", "executive", "administrator", "legal", "commercial"] as const),
+  displayName: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  role: z.enum(['loan_executive', 'supervisor', 'administrator', 'legal', 'commercial', 'closer', 'appraisal_manager', 'investment_executive']),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").or(z.literal("")).optional(),
 })
 
 interface UserDialogProps {
@@ -55,7 +55,7 @@ export function UserDialog({ open, onOpenChange, userToEdit, onSuccess }: UserDi
       displayName: "",
       email: "",
       password: "",
-      role: "executive",
+      role: "loan_executive",
     },
     values: userToEdit ? {
         displayName: userToEdit.displayName || "",
@@ -88,8 +88,9 @@ export function UserDialog({ open, onOpenChange, userToEdit, onSuccess }: UserDi
         onSuccess()
         onOpenChange(false)
         form.reset()
-    } catch (error) {
+    } catch (error: any) {
         console.error(error)
+        alert("Error al guardar: " + (error.message || "Error desconocido"))
     } finally {
         setIsLoading(false)
     }
@@ -159,13 +160,16 @@ export function UserDialog({ open, onOpenChange, userToEdit, onSuccess }: UserDi
                         <SelectValue placeholder="Selecciona un rol" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="administrator">Administrator</SelectItem>
-                      <SelectItem value="supervisor">Supervisor</SelectItem>
-                      <SelectItem value="executive">Executive</SelectItem>
-                      <SelectItem value="legal">Legal</SelectItem>
-                      <SelectItem value="commercial">Commercial</SelectItem>
-                    </SelectContent>
+                      <SelectContent>
+                        <SelectItem value="administrator">Administrator</SelectItem>
+                        <SelectItem value="supervisor">Supervisor</SelectItem>
+                        <SelectItem value="loan_executive">Ejecutivo de Préstamos</SelectItem>
+                        <SelectItem value="investment_executive">Ejecutivo de Inversiones</SelectItem>
+                        <SelectItem value="legal">Legal</SelectItem>
+                        <SelectItem value="commercial">Commercial</SelectItem>
+                        <SelectItem value="closer">Closer</SelectItem>
+                        <SelectItem value="appraisal_manager">Gestor de Tasación</SelectItem>
+                      </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>

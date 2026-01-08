@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { PhoneCall } from "lucide-react"
+import { DollarSign } from "lucide-react"
 import { leadsService } from "@/features/leads/services/leads.service"
 import { useAuth } from "@/shared/context/auth-context"
 import type { Lead } from "@/features/leads/types/leads.types"
@@ -7,22 +7,16 @@ import { LeadsTable } from "@/features/leads/components/leads-table"
 import { LeadDetailDialog } from "@/features/leads/components/lead-detail-dialog"
 import { DashboardStats } from "./dashboard-stats"
 
-export function ExecutiveDashboard() {
+export function InvestmentDashboard() {
     const { user } = useAuth()
     const [leads, setLeads] = useState<Lead[]>([])
     const [loading, setLoading] = useState(true)
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-    console.log('🎯 ExecutiveDashboard render - user:', user, 'leads count:', leads.length, 'loading:', loading)
-
     useEffect(() => {
-        console.log('🔄 ExecutiveDashboard useEffect triggered, user:', user)
         if (user) {
-            console.log('✅ User exists, calling loadMyLeads()')
             loadMyLeads()
-        } else {
-            console.log('❌ No user, skipping loadMyLeads()')
         }
     }, [user])
 
@@ -30,19 +24,17 @@ export function ExecutiveDashboard() {
         if (!user) return
         
         try {
-            console.log('📥 ExecutiveDashboard: Loading leads for user:', user.uid)
+            setLoading(true)
+            // Get leads assigned to this executive
             const myLeads = await leadsService.getLeadsByExecutive(user.uid)
-            const filteredLeads = myLeads.filter(l => l.leadType === 'loan')
-            setLeads(filteredLeads)
+            const filteredLeads = myLeads.filter(l => l.leadType === 'investment')
             
-            // Refresh selectedLead reference if dialog is open
-            setSelectedLead(current => {
-                if (!current) return null
-                return filteredLeads.find(l => l.id === current.id) || current
-            })
-            console.log('📥 ExecutiveDashboard: State updated with leads')
+            // For Investment Executive, we sort by amount descending
+            const sortedLeads = [...filteredLeads].sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))
+            
+            setLeads(sortedLeads)
         } catch (error) {
-            console.error("Error loading leads:", error)
+            console.error("Error loading investment leads:", error)
         } finally {
             setLoading(false)
         }
@@ -54,15 +46,15 @@ export function ExecutiveDashboard() {
     }
 
     const handleLeadUpdated = () => {
-        loadMyLeads() // Refresh leads after update
+        loadMyLeads()
     }
 
     return (
         <div className="space-y-8">
             <div>
-                <h2 className="text-3xl font-bold tracking-tight">Mis Leads</h2>
+                <h2 className="text-3xl font-bold tracking-tight">Leads de Inversión</h2>
                 <p className="text-muted-foreground">
-                    Gestiona tus leads asignados de préstamos.
+                    Gestión de prospectos para inversión
                 </p>
             </div>
 
@@ -71,9 +63,9 @@ export function ExecutiveDashboard() {
                 <DashboardStats
                     title="Leads Asignados"
                     value={loading ? "..." : leads.length}
-                    description="Total de leads asignados a tu cuenta"
-                    icon={PhoneCall}
-                    iconColor="text-blue-500"
+                    description="Total de leads para evaluación"
+                    icon={DollarSign}
+                    iconColor="text-green-500"
                 />
             </div>
 
@@ -81,12 +73,9 @@ export function ExecutiveDashboard() {
             <div className="space-y-4">
                 <h3 className="text-xl font-semibold">Lista de Leads</h3>
                 {loading ? (
-                    <p>Cargando tus leads...</p>
+                    <p>Cargando leads...</p>
                 ) : (
-                    <>
-                        {console.log('📤 ExecutiveDashboard: Passing leads to table:', leads)}
-                        <LeadsTable leads={leads} onLeadClick={handleLeadClick} />
-                    </>
+                    <LeadsTable leads={leads} onLeadClick={handleLeadClick} />
                 )}
             </div>
 

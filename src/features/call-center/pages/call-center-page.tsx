@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Upload, Plus, User } from "lucide-react"
+import { Upload, Plus, User, Database } from "lucide-react"
 import { LeadUploadDialog } from "@/features/leads/components/lead-upload-dialog"
 import { LeadDialog } from "@/features/leads/components/lead-dialog"
 import { usersService } from "@/features/users/services/users.service"
@@ -23,7 +23,7 @@ export function CallCenterPage() {
         try {
             // Load executives
             const allUsers = await usersService.getAll()
-            const execs = allUsers.filter(u => u.role === 'executive')
+            const execs = allUsers.filter(u => u.role === 'loan_executive' || u.role === 'investment_executive')
             setExecutives(execs)
 
             // Load lead counts per executive
@@ -46,6 +46,43 @@ export function CallCenterPage() {
         loadData() // Refresh data
     }
 
+    const handleSeedLeads = async () => {
+        const confirm = window.confirm("¿Deseas cargar leads de prueba para ambos tipos de ejecutivos?")
+        if (!confirm) return
+
+        setLoading(true)
+        try {
+            const mockLeads = [
+                { name: "Juan Préstamos", phone: "999000111", amount: 50000, email: "juan@test.com" },
+                { name: "Maria Inversiones", phone: "999000222", amount: 150000, email: "maria@test.com" }
+            ]
+
+            // Loan lead
+            await leadsService.createLead({
+                ...mockLeads[0],
+                status: 'nuevo',
+                leadType: 'loan',
+                source: 'manual'
+            }, 'random')
+
+            // Investment lead
+            await leadsService.createLead({
+                ...mockLeads[1],
+                status: 'nuevo',
+                leadType: 'investment',
+                source: 'manual'
+            }, 'random')
+
+            alert("Leads de prueba creados satisfactoriamente")
+            loadData()
+        } catch (error) {
+            console.error(error)
+            alert("Error al crear leads de prueba")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     const getLeadCountForExecutive = (executiveId: string): number => {
         const found = executiveLeadCounts.find(item => item.executiveId === executiveId)
         return found ? found.count : 0
@@ -61,6 +98,10 @@ export function CallCenterPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
+                    <Button variant="ghost" onClick={handleSeedLeads}>
+                        <Database className="mr-2 h-4 w-4" />
+                        Sembrar Prueba
+                    </Button>
                     <Button variant="outline" onClick={() => setIsCreateOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
                         New Lead
@@ -86,6 +127,9 @@ export function CallCenterPage() {
                                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                         <CardTitle className="text-sm font-medium">
                                             {exec.displayName}
+                                            <span className="ml-2 text-[10px] bg-secondary px-1.5 py-0.5 rounded text-secondary-foreground uppercase">
+                                                {exec.role === 'loan_executive' ? 'Préstamos' : 'Inversiones'}
+                                            </span>
                                         </CardTitle>
                                         <User className="h-4 w-4 text-muted-foreground" />
                                     </CardHeader>
@@ -102,7 +146,7 @@ export function CallCenterPage() {
                             )
                         })
                     ) : (
-                        <p className="text-muted-foreground col-span-full">No executives registered.</p>
+                        <p className="text-muted-foreground col-span-full">No hay ejecutivos registrados.</p>
                     )}
                 </div>
             </div>

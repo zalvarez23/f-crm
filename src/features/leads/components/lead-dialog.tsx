@@ -37,6 +37,7 @@ const formSchema = z.object({
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   amount: z.string().optional(), // Input as string, convert to number
   assignedTo: z.string(),
+  leadType: z.enum(['loan', 'investment']),
 })
 
 interface LeadDialogProps {
@@ -57,6 +58,7 @@ export function LeadDialog({ open, onOpenChange, executives, onSuccess }: LeadDi
       email: "",
       amount: "",
       assignedTo: "random", // Default to random
+      leadType: "loan",
     },
   })
 
@@ -68,10 +70,11 @@ export function LeadDialog({ open, onOpenChange, executives, onSuccess }: LeadDi
         await leadsService.createLead({
             name: values.name,
             phone: values.phone,
-            email: values.email || undefined,
+            email: values.email || null,
             amount: values.amount ? Number(values.amount) : 0,
             status: 'nuevo',
             assignedTo: isRandom ? undefined : (values.assignedTo === 'unassigned' ? undefined : values.assignedTo),
+            leadType: values.leadType,
             source: 'manual'
         }, isRandom ? 'random' : 'equitable')
 
@@ -129,7 +132,7 @@ export function LeadDialog({ open, onOpenChange, executives, onSuccess }: LeadDi
                 name="amount"
                 render={({ field }) => (
                     <FormItem>
-                    <FormLabel>Monto (Opcional)</FormLabel>
+                    <FormLabel>{form.watch('leadType') === 'investment' ? 'Capital a Invertir' : 'Monto (S/)'}</FormLabel>
                     <FormControl>
                         <Input type="number" placeholder="10000" {...field} />
                     </FormControl>
@@ -152,6 +155,34 @@ export function LeadDialog({ open, onOpenChange, executives, onSuccess }: LeadDi
                 </FormItem>
               )}
             />
+            <FormField
+              control={form.control}
+              name="leadType"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tipo de Lead</FormLabel>
+                    <Select 
+                        onValueChange={(val) => {
+                            field.onChange(val)
+                            form.setValue('assignedTo', 'random')
+                        }} 
+                        defaultValue={field.value}
+                    >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar Tipo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="loan">Préstamos</SelectItem>
+                      <SelectItem value="investment">Inversiones</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
 
             <FormField
               control={form.control}
@@ -168,7 +199,9 @@ export function LeadDialog({ open, onOpenChange, executives, onSuccess }: LeadDi
                     <SelectContent>
                       <SelectItem value="random">🎲 Asignación Aleatoria</SelectItem>
                       <SelectItem value="unassigned">-- Sin Asignar --</SelectItem>
-                      {executives.map(exec => (
+                      {executives
+                        .filter(exec => form.watch('leadType') === 'loan' ? exec.role === 'loan_executive' : exec.role === 'investment_executive')
+                        .map(exec => (
                         <SelectItem key={exec.uid} value={exec.uid}>
                           {exec.displayName}
                         </SelectItem>

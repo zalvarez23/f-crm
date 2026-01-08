@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Required for Custom Auth: allows querying users by email/password
+    // and real-time status monitoring.
+    match /users/{userId} {
+      allow read: if true;
+      allow update: if true;
+      allow create: if true;
+    }
+
+    // Default rules for Leads and other collections
+    match /leads/{leadId} {
+      allow read, write: if true;
+    }
+    
+    // Catch-all for other collections used in the app
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

@@ -33,6 +33,7 @@ interface LeadUploadDialogProps {
 export function LeadUploadDialog({ open, onOpenChange, executives, onSuccess }: LeadUploadDialogProps) {
     const [file, setFile] = useState<File | null>(null)
     const [selectedExecutive, setSelectedExecutive] = useState<string>("unassigned")
+    const [leadType, setLeadType] = useState<'loan' | 'investment'>('loan')
     const [isLoading, setIsLoading] = useState(false)
     const [previewCount, setPreviewCount] = useState<number>(0)
 
@@ -69,11 +70,15 @@ export function LeadUploadDialog({ open, onOpenChange, executives, onSuccess }: 
                 amount: Number(row.Monto) || 0,
                 status: 'nuevo' as const,
                 assignedTo: distributionMethod === 'manual' && selectedExecutive !== "unassigned" ? selectedExecutive : undefined,
+                leadType: leadType,
                 source: 'excel-upload'
             }))
 
-            const executiveIds = executives.map(e => e.uid)
-            await leadsService.uploadLeads(leadsToUpload, distributionMethod, executiveIds)
+            const filteredExecutives = executives.filter(e => 
+                leadType === 'loan' ? e.role === 'loan_executive' : e.role === 'investment_executive'
+            )
+            const executiveIds = filteredExecutives.map(e => e.uid)
+            await leadsService.uploadLeads(leadsToUpload, distributionMethod, executiveIds, leadType)
             
             onSuccess()
             onOpenChange(false)
@@ -95,7 +100,7 @@ export function LeadUploadDialog({ open, onOpenChange, executives, onSuccess }: 
                 <DialogHeader>
                     <DialogTitle>Cargar Base de Leads</DialogTitle>
                     <DialogDescription>
-                        Sube un archivo Excel (.xlsx) con las columnas: Nombre, Telefono, Email, Monto.
+                        Sube un archivo Excel (.xlsx). Para inversiones se requiere principalmente: Telefono y Correo.
                     </DialogDescription>
                 </DialogHeader>
                 
@@ -115,6 +120,24 @@ export function LeadUploadDialog({ open, onOpenChange, executives, onSuccess }: 
                                 {previewCount} leads detectados
                             </p>
                         )}
+                    </div>
+                    <div className="grid gap-2">
+                        <Label>Tipo de Base</Label>
+                        <Select 
+                            value={leadType} 
+                            onValueChange={(val: 'loan' | 'investment') => {
+                                setLeadType(val)
+                                setSelectedExecutive('unassigned')
+                            }}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Seleccionar Tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="loan">Préstamos</SelectItem>
+                                <SelectItem value="investment">Inversiones</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
 
                     <div className="grid gap-2">
@@ -142,7 +165,9 @@ export function LeadUploadDialog({ open, onOpenChange, executives, onSuccess }: 
                                 </SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="unassigned">-- Sin Asignar --</SelectItem>
-                                    {executives.map(exec => (
+                                    {executives
+                                        .filter(exec => leadType === 'loan' ? exec.role === 'loan_executive' : exec.role === 'investment_executive')
+                                        .map(exec => (
                                         <SelectItem key={exec.uid} value={exec.uid}>
                                             {exec.displayName}
                                         </SelectItem>
