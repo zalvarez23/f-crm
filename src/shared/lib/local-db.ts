@@ -114,7 +114,7 @@ export const localDb = {
     },
 
     isLocalMode(): boolean {
-        return localStorage.getItem('f-crm-local-mode') === 'true'
+        return false // Always force Firebase mode
     },
 
     updateUserStatus(uid: string, status: UserStatus) {

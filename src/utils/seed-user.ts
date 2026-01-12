@@ -1,30 +1,9 @@
 import { db } from "@/lib/firebase"
 import { serverTimestamp, collection, addDoc, query, where, getDocs } from "firebase/firestore"
-import { localDb } from "@/shared/lib/local-db"
-import type { UserProfile } from "@/shared/types/user.types"
 
 const createUser = async (email: string, password: string, role: any, displayName: string) => {
-    // Priority 1: Try Local Mode if forced
-    if (localDb.isLocalMode()) {
-        const users = localDb.getUsers()
-        if (users.some(u => u.email === email)) {
-            console.log(`⚠️ (Local) User ${email} already exists, skipping...`)
-            return
-        }
-        const newUser: UserProfile = {
-            uid: `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            email,
-            password,
-            role,
-            displayName,
-            status: 'available',
-            createdAt: new Date()
-        }
-        users.push(newUser)
-        localDb.saveUsers(users)
-        console.log(`✅ (Local) User ${email} created locally!`)
-        return
-    }
+    // Priority: Always use Firestore now
+    // if (localDb.isLocalMode()) { ... } removed
 
     try {
         // Priority 2: Try Firestore
@@ -51,12 +30,7 @@ const createUser = async (email: string, password: string, role: any, displayNam
 
     } catch (error: any) {
         console.error(`❌ Error creating ${email} in Firestore:`, error)
-        if (error.code === 'permission-denied') {
-            console.warn("Permission denied, falling back to local creation")
-            localDb.setLocalMode(true)
-            // Recursive call will now go to Local Mode branch
-            await createUser(email, password, role, displayName)
-        }
+        // Removed fallback to local mode
     }
 }
 
