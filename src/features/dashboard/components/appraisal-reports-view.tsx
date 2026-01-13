@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { toast } from "sonner"
 
 export function AppraisalReportsView() {
@@ -19,8 +20,11 @@ export function AppraisalReportsView() {
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
+    const [investorDNI, setInvestorDNI] = useState("")
     const [investorName, setInvestorName] = useState("")
     const [investorPhone, setInvestorPhone] = useState("")
+    const [searchingInvestor, setSearchingInvestor] = useState(false)
+    const [statusFilter, setStatusFilter] = useState<"all" | "assigned" | "unassigned">("all")
 
     useEffect(() => {
         loadAppraisals()
@@ -28,14 +32,20 @@ export function AppraisalReportsView() {
 
     useEffect(() => {
         const lowerSearch = search.toLowerCase()
-        setFilteredLeads(
-            leads.filter(lead => 
-                lead.name.toLowerCase().includes(lowerSearch) || 
-                lead.email?.toLowerCase().includes(lowerSearch) ||
-                lead.phone.toLowerCase().includes(lowerSearch)
-            )
+        let filtered = leads.filter(lead => 
+            lead.name.toLowerCase().includes(lowerSearch) || 
+            lead.email?.toLowerCase().includes(lowerSearch) ||
+            lead.phone.toLowerCase().includes(lowerSearch)
         )
-    }, [search, leads])
+
+        if (statusFilter === "assigned") {
+            filtered = filtered.filter(lead => lead.appraisal?.investorName)
+        } else if (statusFilter === "unassigned") {
+            filtered = filtered.filter(lead => !lead.appraisal?.investorName)
+        }
+
+        setFilteredLeads(filtered)
+    }, [search, leads, statusFilter])
 
     const loadAppraisals = async () => {
         try {
@@ -62,9 +72,35 @@ export function AppraisalReportsView() {
 
     const handleAssignInvestor = (lead: Lead) => {
         setSelectedLead(lead)
+        setInvestorDNI("")
         setInvestorName(lead.appraisal?.investorName || "")
         setInvestorPhone(lead.appraisal?.investorPhone || "")
         setIsAssignDialogOpen(true)
+    }
+
+    const handleSearchInvestorByDNI = async () => {
+        if (!investorDNI.trim()) {
+            toast.error("Por favor ingrese un DNI")
+            return
+        }
+
+        try {
+            setSearchingInvestor(true)
+            const investorLead = await leadsService.searchLeadByIdentityDocument(investorDNI.trim())
+            
+            if (investorLead) {
+                setInvestorName(investorLead.name)
+                setInvestorPhone(investorLead.phone)
+                toast.success("Inversionista encontrado")
+            } else {
+                toast.error("No se encontró ningún inversionista con ese DNI")
+            }
+        } catch (error) {
+            console.error("Error searching investor:", error)
+            toast.error("Error al buscar inversionista")
+        } finally {
+            setSearchingInvestor(false)
+        }
     }
 
     const handleSaveInvestor = async () => {
@@ -109,15 +145,28 @@ export function AppraisalReportsView() {
                 </div>
             </div>
 
-            {/* Search Bar */}
-            <div className="relative w-full max-w-md">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Buscar por nombre, correo o teléfono..."
-                    className="pl-10"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
+            {/* Search and Filters */}
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+                <div className="relative w-full max-w-md">
+                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Buscar por nombre, correo o teléfono..."
+                        className="pl-10 h-10"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                    />
+                </div>
+
+                <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+                    <SelectTrigger className="w-full md:w-[200px] h-10">
+                        <SelectValue placeholder="Filtrar por estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">Ver Todos</SelectItem>
+                        <SelectItem value="assigned">Asignados</SelectItem>
+                        <SelectItem value="unassigned">Sin Asignar</SelectItem>
+                    </SelectContent>
+                </Select>
             </div>
 
             {/* Cards Grid */}
@@ -301,6 +350,26 @@ export function AppraisalReportsView() {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="investorDNI">DNI del Inversionista</Label>
+                            <div className="flex gap-2">
+                                <Input
+                                    id="investorDNI"
+                                    placeholder="Ingrese DNI para buscar..."
+                                    value={investorDNI}
+                                    onChange={(e) => setInvestorDNI(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSearchInvestorByDNI()}
+                                />
+                                <Button 
+                                    type="button" 
+                                    variant="secondary"
+                                    onClick={handleSearchInvestorByDNI}
+                                    disabled={searchingInvestor}
+                                >
+                                    {searchingInvestor ? "..." : <Search className="h-4 w-4" />}
+                                </Button>
+                            </div>
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="investorName">Nombre del Inversionista</Label>
                             <Input

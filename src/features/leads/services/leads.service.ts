@@ -252,6 +252,24 @@ export const leadsService = {
     );
   },
 
+  async searchLeadByIdentityDocument(dni: string): Promise<Lead | null> {
+    try {
+      const q = query(
+        collection(db, "leads"),
+        where("identityDocument", "==", dni),
+        where("leadType", "==", "investment")
+      );
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) return null;
+
+      const doc = snapshot.docs[0];
+      return { id: doc.id, ...doc.data() } as Lead;
+    } catch (error: any) {
+      console.error("Error searching lead by DNI:", error);
+      return null;
+    }
+  },
+
   async getAllLeads(): Promise<Lead[]> {
     try {
       const snapshot = await getDocs(collection(db, "leads"));
@@ -339,8 +357,8 @@ export const leadsService = {
         }
       }
 
-      // Check for automatic transfer to Legal
-      if (data.status === "contactado" && data.substatus === "en_validacion") {
+      // Check for automatic transfer to Legal (Skip for investment leads)
+      if (data.status === "contactado" && data.substatus === "en_validacion" && currentLead.leadType !== "investment") {
         console.log("🔄 Triggering transfer to Legal (Online Mode)...");
         const usersSnapshot = await getDocs(
           query(collection(db, "users"), where("role", "==", "legal"))
@@ -381,8 +399,9 @@ export const leadsService = {
           currentLead.appointment?.time &&
           currentLead.appointment?.type);
       const isApproved =
-        currentLead.legalStatus === "approved" &&
-        currentLead.commercialStatus === "approved";
+        (currentLead.legalStatus === "approved" &&
+          currentLead.commercialStatus === "approved") ||
+        currentLead.leadType === "investment";
       const needsAssign =
         !currentLead.closerAssignedTo ||
         currentLead.substatus === "reprogramar" ||
@@ -396,7 +415,7 @@ export const leadsService = {
         newSubstatus: data.substatus,
       });
 
-      if (hasFullAppt && isApproved && needsAssign) {
+      if (hasFullAppt && isApproved && needsAssign && currentLead.leadType !== 'investment') {
         const usersSnapshot = await getDocs(
           query(collection(db, "users"), where("role", "==", "closer"))
         );

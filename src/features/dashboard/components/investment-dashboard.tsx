@@ -86,20 +86,6 @@ export function InvestmentDashboard() {
                     icon={DollarSign}
                     iconColor="text-green-500"
                 />
-                <DashboardStats
-                    title="Pte. Legal"
-                    value={loading ? "..." : stats.pendingLegal}
-                    description="A la espera de revisión legal"
-                    icon={DollarSign}
-                    iconColor="text-blue-600"
-                />
-                <DashboardStats
-                    title="Pte. Comercial"
-                    value={loading ? "..." : stats.pendingCommercial}
-                    description="A la espera de revisión comercial"
-                    icon={DollarSign}
-                    iconColor="text-primary"
-                />
             </div>
 
             {/* Leads Table */}

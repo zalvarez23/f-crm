@@ -422,7 +422,10 @@ export function LeadDetailDialog({
   const bothApproved =
     lead.legalStatus === "approved" && lead.commercialStatus === "approved";
   const appointmentLocked = lead.appointmentLocked === true;
-  const isEditable = (!isInReview || bothApproved) && !appointmentLocked;
+  
+  // Investment leads bypass legal/commercial review flow
+  const isInvestmentLead = lead.leadType === "investment";
+  const isEditable = (!isInReview || bothApproved || isInvestmentLead) && !appointmentLocked;
 
   return (
     <Dialog open={open} onOpenChange={handleDialogChange}>
@@ -480,12 +483,13 @@ export function LeadDetailDialog({
             )}
             <TabsTrigger value="notes">Notas</TabsTrigger>
             <TabsTrigger value="appointment">Cita</TabsTrigger>
-            {lead.closerAssignedTo && user?.role === "closer" && (
+            {((lead.closerAssignedTo && user?.role === "closer") || 
+               (lead.leadType === 'investment' && user?.role === 'investment_executive' && lead.appointment?.date)) && (
               <TabsTrigger
                 value="closer"
                 className="bg-blue-50 border-blue-200"
               >
-                Seguimiento Closer
+                {lead.leadType === 'investment' ? 'Resultado de Cita' : 'Seguimiento Closer'}
               </TabsTrigger>
             )}
             {lead.closerFollowUp?.paidAppraisal &&
@@ -1127,15 +1131,15 @@ export function LeadDetailDialog({
 
               {/* Appointment Tab - Only show when both approvals exist and status is Contactado + Cita */}
               <TabsContent value="appointment" className="space-y-4">
-                {lead.legalStatus === "approved" &&
-                lead.commercialStatus === "approved" &&
+                {((lead.legalStatus === "approved" && lead.commercialStatus === "approved") || lead.leadType === "investment") &&
                 form.watch("status") === "contactado" &&
                 form.watch("substatus") === "cita" ? (
                   <>
                     <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
                       <p className="text-sm text-green-800">
-                        ✅ Lead aprobado por Legal y Comercial. Ya puedes
-                        agendar una cita.
+                        {lead.leadType === "investment" 
+                          ? "✅ Lead de inversión listo para agendar cita."
+                          : "✅ Lead aprobado por Legal y Comercial. Ya puedes agendar una cita."}
                       </p>
                     </div>
 
@@ -1203,25 +1207,27 @@ export function LeadDetailDialog({
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="appointment.appraisalCost"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Costo de Tasación (S/)</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="0.00"
-                              step="0.01"
-                              {...field}
-                              disabled={!isEditable}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {lead.leadType !== 'investment' && (
+                      <FormField
+                        control={form.control}
+                        name="appointment.appraisalCost"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Costo de Tasación (S/)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="0.00"
+                                step="0.01"
+                                {...field}
+                                disabled={!isEditable}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                   </>
                 ) : (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
@@ -1229,16 +1235,24 @@ export function LeadDetailDialog({
                       ⚠️ El agendamiento de citas solo está disponible cuando:
                     </p>
                     <ul className="list-disc list-inside text-sm text-yellow-700 mt-2 space-y-1">
-                      <li>El lead ha sido aprobado por Legal</li>
-                      <li>El lead ha sido aprobado por Comercial</li>
+                      {lead.leadType !== 'investment' && (
+                        <>
+                          <li>El lead ha sido aprobado por Legal</li>
+                          <li>El lead ha sido aprobado por Comercial</li>
+                        </>
+                      )}
                       <li>El estado es "Contactado" y el subestado es "Cita"</li>
                     </ul>
                   </div>
                 )}
               </TabsContent>
 
-              {/* Closer Follow-up Tab - Only visible to users with 'closer' role */}
-              {lead.closerAssignedTo && user?.role === "closer" && (
+            </form>
+          </Form>
+
+              {/* Closer Follow-up Tab / Outcome - Visible for Closers OR Investment Executives (for investment leads) */}
+              {((lead.closerAssignedTo && user?.role === "closer") || 
+               (lead.leadType === 'investment' && user?.role === 'investment_executive' && lead.appointment?.date)) && (
                 <TabsContent value="closer" className="space-y-4">
                   <CloserFollowUpForm
                     key={`closer-form-${lead.id}-${lead.closerFollowUp?.clientAttended}-${lead.closerFollowUp?.attendanceRecordedAt}`}
@@ -1248,37 +1262,6 @@ export function LeadDetailDialog({
                   />
                 </TabsContent>
               )}
-
-              {lead.closerFollowUp?.paidAppraisal &&
-                user &&
-                [
-                  "appraisal_manager",
-                  "supervisor",
-                  "administrator",
-                  "investment_executive",
-                ].includes(user.role || "") && (
-                  <TabsContent value="appraisal" className="space-y-4">
-                    <AppraisalForm
-                      lead={lead}
-                      currentUserId={user.uid}
-                      onSuccess={onSuccess}
-                    />
-                  </TabsContent>
-                )}
-            </form>
-          </Form>
-
-          {/* Closer Follow-up Tab - Only visible to users with 'closer' role */}
-          {lead.closerAssignedTo && user?.role === "closer" && (
-            <TabsContent value="closer" className="space-y-4">
-              <CloserFollowUpForm
-                key={`closer-form-${lead.id}-${lead.closerFollowUp?.clientAttended}-${lead.closerFollowUp?.attendanceRecordedAt}`}
-                lead={lead}
-                currentUserId={user.uid}
-                onSuccess={onSuccess}
-              />
-            </TabsContent>
-          )}
 
           {lead.closerFollowUp?.paidAppraisal &&
             user &&

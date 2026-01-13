@@ -11,6 +11,7 @@ import type { Lead } from "../types/leads.types"
 import { leadsService } from "../services/leads.service"
 import { serverTimestamp } from "firebase/firestore"
 import { toast } from "sonner"
+import { useAuth } from "@/shared/context/auth-context"
 
 interface CloserFollowUpFormProps {
   lead: Lead
@@ -19,6 +20,8 @@ interface CloserFollowUpFormProps {
 }
 
 export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFollowUpFormProps) {
+  const { user } = useAuth()
+  const isInvestmentExecutive = user?.role === 'investment_executive'
   const [clientAttended, setClientAttended] = useState<boolean | null>(
     lead.closerFollowUp?.clientAttended ?? null
   )
@@ -120,10 +123,9 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
     
     setIsLoading(true)
     try {
-      await leadsService.updateLead(lead.id!, {
+      const updateData: any = {
         status: 'contactado',
         substatus: 'reprogramar',
-        assignedTo: lead.previousOwner || lead.assignedTo, // Return to original executive
         appointmentLocked: false, // Unlock for rescheduling
         closerFollowUp: {
           ...lead.closerFollowUp,
@@ -132,8 +134,17 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
           rescheduledAt: serverTimestamp() as any,
           rescheduledBy: currentUserId
         }
-      })
-      toast.success('Lead listo para reprogramación. Se ha devuelto al ejecutivo.')
+      }
+
+      // If not an investment executive (normal closer flow), reassign to original executive
+      if (!isInvestmentExecutive) {
+        updateData.assignedTo = lead.previousOwner || lead.assignedTo;
+      }
+
+      await leadsService.updateLead(lead.id!, updateData)
+      toast.success(isInvestmentExecutive 
+        ? 'Lead listo para reprogramación.' 
+        : 'Lead listo para reprogramación. Se ha devuelto al ejecutivo.')
       onSuccess()
     } catch (error) {
       console.error('Error rescheduling lead:', error)

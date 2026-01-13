@@ -9,6 +9,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Calendar, CheckCircle2, AlertTriangle, FileText } from "lucide-react"
 import type { Lead } from "../types/leads.types"
+import { useAuth } from "@/shared/context/auth-context"
 
 interface LeadsTableProps {
   leads: Lead[]
@@ -16,6 +17,8 @@ interface LeadsTableProps {
 }
 
 export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
+  const { user } = useAuth()
+  const isInvestmentExecutive = user?.role === 'investment_executive'
   // Debug: log leads to see their structure
   console.log('📊 LeadsTable rendering with leads:', leads.map(l => ({
     name: l.name,
@@ -79,8 +82,12 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
             <TableHead>Email</TableHead>
             <TableHead>Monto / Capital</TableHead>
             <TableHead>Estado</TableHead>
-            <TableHead>Estado Legal</TableHead>
-            <TableHead>Estado Comercial</TableHead>
+            {!isInvestmentExecutive && (
+              <>
+                <TableHead>Estado Legal</TableHead>
+                <TableHead>Estado Comercial</TableHead>
+              </>
+            )}
             <TableHead>Cita / Seguimiento</TableHead>
           </TableRow>
         </TableHeader>
@@ -97,44 +104,48 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
                 <TableCell>{lead.email || "-"}</TableCell>
                 <TableCell className="font-semibold">S/ {Number(lead.amount || 0).toLocaleString()}</TableCell>
                 <TableCell>{getStatusBadge(lead)}</TableCell>
-                <TableCell>
-                  {lead.legalStatus === 'approved' && (
-                    <Badge variant="outline" className="bg-emerald-500 text-white border-emerald-600">
-                      <CheckCircle className="mr-1 h-3 w-3" />
-                      Preaprobado-Legal
-                    </Badge>
-                  )}
-                  {lead.legalStatus === 'rejected' && (
-                    <Badge variant="outline" className="bg-red-500 text-white border-red-600">
-                      Rechazado-Legal
-                    </Badge>
-                  )}
-                  {lead.legalStatus === 'pending_review' && (
-                    <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
-                      En Revisión Legal
-                    </Badge>
-                  )}
-                  {!lead.legalStatus && "-"}
-                </TableCell>
-                <TableCell>
-                  {lead.commercialStatus === 'approved' && (
-                    <Badge variant="outline" className="bg-emerald-500 text-white border-emerald-600">
-                      <CheckCircle className="mr-1 h-3 w-3" />
-                      Aprobado-Comercial
-                    </Badge>
-                  )}
-                  {lead.commercialStatus === 'rejected' && (
-                    <Badge variant="outline" className="bg-red-500 text-white border-red-600">
-                      Rechazado-Comercial
-                    </Badge>
-                  )}
-                  {lead.commercialStatus === 'pending_review' && (
-                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                      En Revisión Comercial
-                    </Badge>
-                  )}
-                  {!lead.commercialStatus && "-"}
-                </TableCell>
+                {!isInvestmentExecutive && (
+                  <>
+                    <TableCell>
+                      {lead.legalStatus === 'approved' && (
+                        <Badge variant="outline" className="bg-emerald-500 text-white border-emerald-600">
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          Preaprobado-Legal
+                        </Badge>
+                      )}
+                      {lead.legalStatus === 'rejected' && (
+                        <Badge variant="outline" className="bg-red-500 text-white border-red-600">
+                          Rechazado-Legal
+                        </Badge>
+                      )}
+                      {lead.legalStatus === 'pending_review' && (
+                        <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
+                          En Revisión Legal
+                        </Badge>
+                      )}
+                      {!lead.legalStatus && "-"}
+                    </TableCell>
+                    <TableCell>
+                      {lead.commercialStatus === 'approved' && (
+                        <Badge variant="outline" className="bg-emerald-500 text-white border-emerald-600">
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          Aprobado-Comercial
+                        </Badge>
+                      )}
+                      {lead.commercialStatus === 'rejected' && (
+                        <Badge variant="outline" className="bg-red-500 text-white border-red-600">
+                          Rechazado-Comercial
+                        </Badge>
+                      )}
+                      {lead.commercialStatus === 'pending_review' && (
+                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                          En Revisión Comercial
+                        </Badge>
+                      )}
+                      {!lead.commercialStatus && "-"}
+                    </TableCell>
+                  </>
+                )}
 
                 <TableCell>
                   {lead.closerAssignedTo && lead.appointment && (
@@ -193,7 +204,7 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
             ))
           ) : (
             <TableRow>
-              <TableCell colSpan={8} className="text-center h-24 text-muted-foreground">
+              <TableCell colSpan={isInvestmentExecutive ? 6 : 8} className="text-center h-24 text-muted-foreground">
                 No hay leads registrados.
               </TableCell>
             </TableRow>

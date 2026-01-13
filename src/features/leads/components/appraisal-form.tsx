@@ -9,6 +9,7 @@ import type { Lead } from "../types/leads.types"
 import { leadsService } from "../services/leads.service"
 import { serverTimestamp } from "firebase/firestore"
 import { toast } from "sonner"
+import { useAuth } from "@/shared/context/auth-context"
 import {
   Accordion,
   AccordionContent,
@@ -23,6 +24,7 @@ interface AppraisalFormProps {
 }
 
 export function AppraisalForm({ lead, currentUserId, onSuccess }: AppraisalFormProps) {
+  const { user } = useAuth()
   const isCompleted = !!lead.appraisal?.completedAt
   
   const [isEditing, setIsEditing] = useState(!isCompleted)
@@ -263,46 +265,48 @@ export function AppraisalForm({ lead, currentUserId, onSuccess }: AppraisalFormP
             </div>
           )}
 
-          {/* Investor Assignment Section - Visible for Supervisors and Investment Executives */}
-          <div className="border-t pt-6 mt-6">
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-              Asignación de Inversionista
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="investorName">Nombre del Inversionista</Label>
-                <Input
-                  id="investorName"
-                  value={investorName}
-                  onChange={(e) => setInvestorName(e.target.value)}
-                  placeholder="Nombre completo"
-                  disabled={!isEditing}
-                />
+          {/* Investor Assignment Section - Visible for Supervisors, Admins and Investment Executives */}
+          {user && ["supervisor", "administrator", "investment_executive"].includes(user.role || "") && (
+            <div className="border-t pt-6 mt-6">
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                Asignación de Inversionista
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="investorName">Nombre del Inversionista</Label>
+                  <Input
+                    id="investorName"
+                    value={investorName}
+                    onChange={(e) => setInvestorName(e.target.value)}
+                    placeholder="Nombre completo"
+                    disabled={!isEditing}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="investorPhone">Teléfono del Inversionista</Label>
+                  <Input
+                    id="investorPhone"
+                    value={investorPhone}
+                    onChange={(e) => setInvestorPhone(e.target.value)}
+                    placeholder="999888777"
+                    disabled={!isEditing}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="investorPhone">Teléfono del Inversionista</Label>
-                <Input
-                  id="investorPhone"
-                  value={investorPhone}
-                  onChange={(e) => setInvestorPhone(e.target.value)}
-                  placeholder="999888777"
-                  disabled={!isEditing}
-                />
-              </div>
+              {!isEditing && isCompleted && (
+                  <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-4"
+                      onClick={() => setIsEditing(true)}
+                  >
+                      Editar Asignación / Tasación
+                  </Button>
+              )}
             </div>
-            {!isEditing && isCompleted && (
-                 <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-4"
-                    onClick={() => setIsEditing(true)}
-                 >
-                    Editar Asignación / Tasación
-                 </Button>
-            )}
-          </div>
+          )}
         </form>
 
         {/* History Section */}
