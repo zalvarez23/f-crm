@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Upload, FileSpreadsheet, Loader2 } from "lucide-react"
 import { leadsService } from "../services/leads.service"
+import { toast } from "sonner"
 import type { LeadUploadRow } from "../types/leads.types"
 import type { UserProfile } from "@/shared/types/user.types"
 
@@ -80,6 +81,7 @@ export function LeadUploadDialog({ open, onOpenChange, executives, onSuccess }: 
             const executiveIds = filteredExecutives.map(e => e.uid)
             await leadsService.uploadLeads(leadsToUpload, distributionMethod, executiveIds, leadType)
             
+            toast.success("Leads cargados exitosamente")
             onSuccess()
             onOpenChange(false)
             setFile(null)
@@ -88,7 +90,7 @@ export function LeadUploadDialog({ open, onOpenChange, executives, onSuccess }: 
             setSelectedExecutive('unassigned')
         } catch (error) {
             console.error("Error uploading leads:", error)
-            alert("Error al procesar el archivo. Verifique el formato.")
+            toast.error("Error al procesar el archivo. Verifique el formato.")
         } finally {
             setIsLoading(false)
         }

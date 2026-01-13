@@ -1,5 +1,6 @@
 import { db } from "@/lib/firebase"
 import { serverTimestamp, collection, addDoc, query, where, getDocs } from "firebase/firestore"
+import { toast } from "sonner"
 
 const createUser = async (email: string, password: string, role: any, displayName: string) => {
     // Priority: Always use Firestore now
@@ -45,5 +46,5 @@ export const seedSupervisor = async () => {
     await createUser("tasacion@intercapital.com", "password123", "appraisal_manager", "Gestor de Tasación")
     await createUser("inversion@intercapital.com", "password123", "investment_executive", "Ejecutivo de Inversiones")
     console.log("✅ User seeding completed!")
-    alert("✅ Usuarios verificados/creados (Admin, Legal, Comercial, Closer, Tasación). Revisa la consola.")
+    toast.success("✅ Usuarios verificados/creados (Admin, Legal, Comercial, Closer, Tasación). Revisa la consola.")
 }

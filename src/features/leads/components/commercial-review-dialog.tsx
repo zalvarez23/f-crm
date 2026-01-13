@@ -12,6 +12,7 @@ import {
 import { leadsService } from "../services/leads.service";
 import type { Lead } from "../types/leads.types";
 import { useAuth } from "@/shared/context/auth-context";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -79,7 +80,7 @@ export function CommercialReviewDialog({
       onOpenChange(false);
     } catch (error) {
       console.error("Error approving lead:", error);
-      alert("Error al aprobar el lead");
+      toast.error("Error al aprobar el lead");
     } finally {
       setIsLoading(false);
       setActionType(null);
@@ -101,7 +102,7 @@ export function CommercialReviewDialog({
       onOpenChange(false);
     } catch (error) {
       console.error("Error rejecting lead:", error);
-      alert("Error al rechazar el lead");
+      toast.error("Error al rechazar el lead");
     } finally {
       setIsLoading(false);
       setActionType(null);

@@ -13,6 +13,7 @@ import { LeadsByTypeChart } from "./analytics/leads-by-type-chart"
 import { PipelineStageChart } from "./analytics/pipeline-stage-chart"
 import { LeadsBySubstatusChart } from "./analytics/leads-by-substatus-chart"
 import { ExecutivePerformanceTable } from "./analytics/executive-performance-table"
+import { toast } from "sonner"
 
 export function SupervisorDashboard() {
     // const [executives, setExecutives] = useState<UserProfile[]>([]) // Removed
@@ -82,10 +83,10 @@ export function SupervisorDashboard() {
             setIsResetting(true)
             await leadsService.deleteAllLeads()
             await loadLeadsStats()
-            alert("Base de datos de leads reiniciada exitosamente.")
+            toast.success("Base de datos de leads reiniciada exitosamente.")
         } catch (error) {
             console.error("Error resetting database:", error)
-            alert("Error al reiniciar la base de datos.")
+            toast.error("Error al reiniciar la base de datos.")
         } finally {
             setIsResetting(false)
         }
@@ -97,7 +98,7 @@ export function SupervisorDashboard() {
                 <div>
                     <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
                     <p className="text-muted-foreground">
-                        Team and lead management overview
+                        Vista general del equipo y gestión de leads
                     </p>
                 </div>
                 <Button 
@@ -126,25 +127,25 @@ export function SupervisorDashboard() {
                     {/* Stats Grid */}
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <DashboardStats
-                            title="Active Executives"
+                            title="Ejecutivos Activos"
                             value={loading ? "..." : stats.activeExecutives}
-                            description="Team members assigned"
+                            description="Miembros del equipo asignados"
                             icon={Users}
-                            iconColor="text-blue-500"
+                            iconColor="text-blue-600"
                         />
                         <DashboardStats
-                            title="Total Leads"
+                            title="Leads Totales"
                             value={loading ? "..." : stats.totalLeads}
-                            description="All leads in system"
+                            description="Todos los leads en el sistema"
                             icon={PhoneCall}
-                            iconColor="text-green-500"
+                            iconColor="text-accent"
                         />
                         <DashboardStats
-                            title="Pending Leads"
+                            title="Leads Pendientes"
                             value={loading ? "..." : stats.pendingLeads}
-                            description="Awaiting first contact"
+                            description="A la espera de primer contacto"
                             icon={Clock}
-                            iconColor="text-orange-500"
+                            iconColor="text-primary"
                         />
                     </div>
 
@@ -175,7 +176,7 @@ export function SupervisorDashboard() {
                         </div>
                     ) : (
                          <div className="flex h-[200px] items-center justify-center rounded-md border border-dashed text-muted-foreground">
-                            {loading ? "Calculando estadísticas..." : "No analytics data available"}
+                            {loading ? "Calculando estadísticas..." : "No hay datos analíticos disponibles"}
                         </div>
                     )}
                 </TabsContent>

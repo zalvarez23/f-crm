@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, FileText, ExternalLink, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import type { Lead } from "../types/leads.types";
 import { leadsService } from "../services/leads.service";
 import { useAuth } from "@/shared/context/auth-context";
@@ -248,7 +249,7 @@ export function LeadDetailDialog({
   ) {
     // Validate PDF
     if (file.type !== "application/pdf") {
-      alert("Solo se permiten archivos PDF");
+      toast.error("Solo se permiten archivos PDF");
       return;
     }
 
@@ -384,7 +385,7 @@ export function LeadDetailDialog({
       }
 
       await leadsService.updateLead(lead.id, updateData);
-      console.log("Lead updated successfully");
+      toast.success("Lead actualizado exitosamente");
 
       // Limpiar archivos pendientes y liberar URLs de vista previa
       Object.values(pendingFiles).forEach(({ preview }) => {
@@ -397,9 +398,9 @@ export function LeadDetailDialog({
       onSuccess();
     } catch (error) {
       console.error("Error updating lead:", error);
-      alert(
-        `Error updating lead: ${
-          error instanceof Error ? error.message : "Unknown error"
+      toast.error(
+        `Error al actualizar lead: ${
+          error instanceof Error ? error.message : "Error desconocido"
         }`
       );
     } finally {
@@ -427,11 +428,11 @@ export function LeadDetailDialog({
     <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Lead Details - {lead.name}</DialogTitle>
+          <DialogTitle>Detalles del Lead - {lead.name}</DialogTitle>
           <DialogDescription>
             {isEditable
-              ? "View and update complete lead information"
-              : "View lead information (Read-only)"}
+              ? "Ver y actualizar la información completa del lead"
+              : "Ver información del lead (Solo lectura)"}
           </DialogDescription>
         </DialogHeader>
 
@@ -442,9 +443,9 @@ export function LeadDetailDialog({
             <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mb-4">
               <p className="text-sm text-yellow-800">
                 {isInReview &&
-                  "⏳ This lead is currently in review and cannot be edited."}
+                  "⏳ Este lead está actualmente en revisión y no puede ser editado."}
                 {appointmentLocked &&
-                  "🔒 Appointment has been scheduled and locked. Cannot edit for security."}
+                  "🔒 La cita ya ha sido programada y bloqueada. No se puede editar por seguridad."}
               </p>
             </div>
           )}
@@ -467,7 +468,7 @@ export function LeadDetailDialog({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full justify-start overflow-x-auto">
-            <TabsTrigger value="basic">Basic</TabsTrigger>
+            <TabsTrigger value="basic">Básico</TabsTrigger>
             <TabsTrigger value="location">Ubicación</TabsTrigger>
             {lead.leadType === "investment" ? (
               <TabsTrigger value="investment">Datos Inversión</TabsTrigger>
@@ -484,7 +485,7 @@ export function LeadDetailDialog({
                 value="closer"
                 className="bg-blue-50 border-blue-200"
               >
-                Closer Follow-up
+                Seguimiento Closer
               </TabsTrigger>
             )}
             {lead.closerFollowUp?.paidAppraisal &&
@@ -510,13 +511,13 @@ export function LeadDetailDialog({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Name
+                      Nombre
                     </p>
                     <p className="text-sm">{lead.name}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Phone
+                      Teléfono
                     </p>
                     <p className="text-sm">{lead.phone}</p>
                   </div>
@@ -533,7 +534,7 @@ export function LeadDetailDialog({
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <FormLabel>Estado</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         value={field.value}
@@ -541,7 +542,7 @@ export function LeadDetailDialog({
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Select status" />
+                            <SelectValue placeholder="Seleccionar estado" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
@@ -753,7 +754,7 @@ export function LeadDetailDialog({
                     <FormItem>
                       <FormLabel>Dirección</FormLabel>
                       <FormControl>
-                        <Input placeholder="Full address" {...field} />
+                        <Input placeholder="Dirección completa" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -1113,7 +1114,7 @@ export function LeadDetailDialog({
                       <FormLabel>Observaciones</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Add observations about this lead..."
+                          placeholder="Añadir observaciones sobre este lead..."
                           className="resize-none min-h-[200px]"
                           {...field}
                         />
@@ -1133,8 +1134,8 @@ export function LeadDetailDialog({
                   <>
                     <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
                       <p className="text-sm text-green-800">
-                        ✅ Lead approved by Legal and Commercial. You can now
-                        schedule an appointment.
+                        ✅ Lead aprobado por Legal y Comercial. Ya puedes
+                        agendar una cita.
                       </p>
                     </div>
 
@@ -1143,7 +1144,7 @@ export function LeadDetailDialog({
                       name="appointment.date"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Appointment Date</FormLabel>
+                          <FormLabel>Fecha de Cita</FormLabel>
                           <FormControl>
                             <Input
                               type="date"
@@ -1161,7 +1162,7 @@ export function LeadDetailDialog({
                       name="appointment.time"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Appointment Time</FormLabel>
+                          <FormLabel>Hora de Cita</FormLabel>
                           <FormControl>
                             <Input
                               type="time"
@@ -1179,7 +1180,7 @@ export function LeadDetailDialog({
                       name="appointment.type"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Appointment Type</FormLabel>
+                          <FormLabel>Tipo de Cita</FormLabel>
                           <Select
                             onValueChange={field.onChange}
                             value={field.value}
@@ -1187,7 +1188,7 @@ export function LeadDetailDialog({
                           >
                             <FormControl>
                               <SelectTrigger>
-                                <SelectValue placeholder="Select appointment type" />
+                                <SelectValue placeholder="Seleccionar tipo de cita" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
@@ -1225,17 +1226,45 @@ export function LeadDetailDialog({
                 ) : (
                   <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
                     <p className="text-sm text-yellow-800">
-                      ⚠️ Appointment scheduling is only available when:
+                      ⚠️ El agendamiento de citas solo está disponible cuando:
                     </p>
                     <ul className="list-disc list-inside text-sm text-yellow-700 mt-2 space-y-1">
-                      ```
-                      <li>Lead has been approved by Legal</li>
-                      <li>Lead has been approved by Commercial</li>
-                      <li>Status is "Contactado" and Substatus is "Cita"</li>
+                      <li>El lead ha sido aprobado por Legal</li>
+                      <li>El lead ha sido aprobado por Comercial</li>
+                      <li>El estado es "Contactado" y el subestado es "Cita"</li>
                     </ul>
                   </div>
                 )}
               </TabsContent>
+
+              {/* Closer Follow-up Tab - Only visible to users with 'closer' role */}
+              {lead.closerAssignedTo && user?.role === "closer" && (
+                <TabsContent value="closer" className="space-y-4">
+                  <CloserFollowUpForm
+                    key={`closer-form-${lead.id}-${lead.closerFollowUp?.clientAttended}-${lead.closerFollowUp?.attendanceRecordedAt}`}
+                    lead={lead}
+                    currentUserId={user.uid}
+                    onSuccess={onSuccess}
+                  />
+                </TabsContent>
+              )}
+
+              {lead.closerFollowUp?.paidAppraisal &&
+                user &&
+                [
+                  "appraisal_manager",
+                  "supervisor",
+                  "administrator",
+                  "investment_executive",
+                ].includes(user.role || "") && (
+                  <TabsContent value="appraisal" className="space-y-4">
+                    <AppraisalForm
+                      lead={lead}
+                      currentUserId={user.uid}
+                      onSuccess={onSuccess}
+                    />
+                  </TabsContent>
+                )}
             </form>
           </Form>
 
@@ -1273,7 +1302,7 @@ export function LeadDetailDialog({
           {isEditable && !["closer", "appraisal"].includes(activeTab) ? (
             <Button type="submit" form="lead-form" disabled={isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save Changes
+              Guardar Cambios
             </Button>
           ) : (
             <Button
@@ -1281,7 +1310,7 @@ export function LeadDetailDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Close
+              Cerrar
             </Button>
           )}
         </DialogFooter>

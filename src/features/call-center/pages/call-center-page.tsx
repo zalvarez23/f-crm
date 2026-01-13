@@ -14,6 +14,7 @@ import { useAuth } from "@/shared/context/auth-context"
 import { LeadsTable } from "@/features/leads/components/leads-table"
 import { LeadDetailDialog } from "@/features/leads/components/lead-detail-dialog"
 import type { Lead } from "@/features/leads/types/leads.types"
+import { toast } from "sonner"
 
 export function CallCenterPage() {
     const { user } = useAuth()
@@ -72,21 +73,21 @@ export function CallCenterPage() {
     }
 
     const statusConfig: Record<UserStatus, { label: string, color: string, bg: string, text: string }> = {
-        available: { label: 'Disponible', color: 'bg-green-500', bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-400' },
-        bathroom: { label: 'Baño', color: 'bg-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-400' },
-        lunch: { label: 'Almuerzo', color: 'bg-orange-500', bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-400' },
-        break: { label: 'Pausa Activa', color: 'bg-yellow-500', bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-400' },
-        meeting: { label: 'Reunión', color: 'bg-purple-500', bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-400' },
-        end_shift: { label: 'Fin de Turno', color: 'bg-red-500', bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-400' }
+        available: { label: 'Disponible', color: 'bg-green-500', bg: 'bg-green-50 dark:bg-green-950/30', text: 'text-green-700 dark:text-green-400' },
+        bathroom: { label: 'Baño', color: 'bg-accent', bg: 'bg-accent/10', text: 'text-accent font-bold' },
+        lunch: { label: 'Almuerzo', color: 'bg-orange-500', bg: 'bg-orange-50 dark:bg-orange-950/30', text: 'text-orange-700 dark:text-orange-400' },
+        break: { label: 'Pausa Activa', color: 'bg-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-950/30', text: 'text-yellow-700 dark:text-yellow-400' },
+        meeting: { label: 'Reunión', color: 'bg-purple-500', bg: 'bg-purple-50 dark:bg-purple-950/30', text: 'text-purple-700 dark:text-purple-400' },
+        end_shift: { label: 'Fin de Turno', color: 'bg-red-500', bg: 'bg-red-50 dark:bg-red-950/30', text: 'text-red-700 dark:text-red-400' }
     }
 
     const handleLeadCreated = () => {
-        alert("Lead created successfully")
+        toast.success("Lead creado exitosamente")
         loadData() // Refresh data
     }
 
     const handleLeadsUploaded = () => {
-        alert("Leads uploaded successfully")
+        toast.success("Leads cargados exitosamente")
         loadData() // Refresh data
     }
 
@@ -119,11 +120,11 @@ export function CallCenterPage() {
                 }, 'random')
             }
 
-            alert("✅ 5 Leads de prueba creados exitosamente en Firebase")
+            toast.success("✅ 5 Leads de prueba creados exitosamente en Firebase")
             loadData()
         } catch (error) {
             console.error(error)
-            alert("❌ Error al crear leads de prueba")
+            toast.error("❌ Error al crear leads de prueba")
         } finally {
             setLoading(false)
         }
@@ -158,11 +159,11 @@ export function CallCenterPage() {
                         </Button>
                         <Button variant="outline" onClick={() => setIsCreateOpen(true)}>
                             <Plus className="mr-2 h-4 w-4" />
-                            New Lead
+                            Nuevo Lead
                         </Button>
                         <Button onClick={() => setIsUploadOpen(true)}>
                             <Upload className="mr-2 h-4 w-4" />
-                            Upload Excel
+                            Cargar Excel
                         </Button>
                     </div>
                 )}

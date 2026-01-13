@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
 
 export function AppraisalReportsView() {
     const [leads, setLeads] = useState<Lead[]>([])
@@ -68,7 +69,7 @@ export function AppraisalReportsView() {
 
     const handleSaveInvestor = async () => {
         if (!selectedLead?.id || !investorName.trim() || !investorPhone.trim()) {
-            alert("Por favor complete todos los campos")
+            toast.error("Por favor complete todos los campos")
             return
         }
 
@@ -82,10 +83,10 @@ export function AppraisalReportsView() {
             })
             setIsAssignDialogOpen(false)
             loadAppraisals()
-            alert("Inversionista asignado exitosamente")
+            toast.success("Inversionista asignado exitosamente")
         } catch (error) {
             console.error("Error assigning investor:", error)
-            alert("Error al asignar inversionista")
+            toast.error("Error al asignar inversionista")
         }
     }
 
@@ -93,7 +94,7 @@ export function AppraisalReportsView() {
         if (reportUrl) {
             window.open(reportUrl, '_blank')
         } else {
-            alert("No hay reporte PDF disponible")
+            toast.error("No hay reporte PDF disponible")
         }
     }
 

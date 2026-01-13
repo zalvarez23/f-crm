@@ -99,9 +99,9 @@ const statusConfig: Record<UserStatus, { label: string, color: string, bg: strin
     },
     bathroom: { 
         label: 'Baño', 
-        color: 'bg-blue-500', 
-        bg: 'bg-blue-50 dark:bg-blue-950/30', 
-        text: 'text-blue-700 dark:text-blue-400' 
+        color: 'bg-accent', 
+        bg: 'bg-accent/10', 
+        text: 'text-accent font-bold' 
     },
     lunch: { 
         label: 'Almuerzo', 
@@ -148,6 +148,12 @@ export function AppSidebar() {
             <SidebarHeader>
                 {user && (
                     <div className="flex flex-col gap-4 p-4 pb-2">
+                        <div className="px-1 py-1">
+                            <h2 className="text-lg font-bold tracking-tight text-[#0c2648] flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-accent" />
+                                Intercapital Perú
+                            </h2>
+                        </div>
                         <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9 border shadow-sm">
                                 <AvatarImage src={user.photoURL} alt={user.displayName} />

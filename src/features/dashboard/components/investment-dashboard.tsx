@@ -77,7 +77,7 @@ export function InvestmentDashboard() {
                     value={loading ? "..." : stats.newLeads}
                     description="Leads pendientes de primer contacto"
                     icon={DollarSign}
-                    iconColor="text-blue-500"
+                    iconColor="text-accent"
                 />
                 <DashboardStats
                     title="Citas"
@@ -91,14 +91,14 @@ export function InvestmentDashboard() {
                     value={loading ? "..." : stats.pendingLegal}
                     description="A la espera de revisión legal"
                     icon={DollarSign}
-                    iconColor="text-orange-500"
+                    iconColor="text-blue-600"
                 />
                 <DashboardStats
                     title="Pte. Comercial"
                     value={loading ? "..." : stats.pendingCommercial}
                     description="A la espera de revisión comercial"
                     icon={DollarSign}
-                    iconColor="text-purple-500"
+                    iconColor="text-primary"
                 />
             </div>
 

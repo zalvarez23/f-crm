@@ -1,4 +1,5 @@
 import { collection, addDoc, serverTimestamp, getDocs, query, where } from "firebase/firestore"
+import { toast } from "sonner"
 import { db } from "@/lib/firebase"
 
 export async function seedLeads() {
@@ -89,10 +90,10 @@ export async function seedLeads() {
         console.log("🎉 Successfully seeded 3 test leads!")
         console.log(`📋 All leads assigned to: ${executiveName}`)
         
-        alert(`✅ Successfully created 3 test leads!\nAssigned to: ${executiveName}`)
+        toast.success(`✅ Successfully created 3 test leads!\nAssigned to: ${executiveName}`)
         
     } catch (error) {
         console.error("❌ Error seeding leads:", error)
-        alert("Error creating test leads. Check console for details.")
+        toast.error("Error creating test leads. Check console for details.")
     }
 }

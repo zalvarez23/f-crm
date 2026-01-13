@@ -53,9 +53,9 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
     }
 
     const statusConfig = {
-      nuevo: { label: "Nuevo", className: "bg-blue-500 text-white border-blue-600" },
-      contactado: { label: "Contactado", className: "bg-green-500 text-white border-green-600" },
-      contacto_no_efectivo: { label: "Contacto No Efectivo", className: "bg-yellow-500 text-white border-yellow-600" },
+      nuevo: { label: "Nuevo", className: "bg-accent text-white border-accent/20" },
+      contactado: { label: "Contactado", className: "bg-emerald-500 text-white border-emerald-600" },
+      contacto_no_efectivo: { label: "C. No Efectivo", className: "bg-yellow-500 text-white border-yellow-600" },
       no_contactado: { label: "No Contactado", className: "bg-red-500 text-white border-red-600" },
       rechazado: { label: "Rechazado", className: "bg-orange-500 text-white border-orange-600" },
     }
@@ -110,7 +110,7 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
                     </Badge>
                   )}
                   {lead.legalStatus === 'pending_review' && (
-                    <Badge variant="outline" className="bg-yellow-500 text-white border-yellow-600">
+                    <Badge variant="outline" className="bg-blue-100 text-blue-700 border-blue-200">
                       En Revisión Legal
                     </Badge>
                   )}
@@ -129,7 +129,7 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
                     </Badge>
                   )}
                   {lead.commercialStatus === 'pending_review' && (
-                    <Badge variant="outline" className="bg-yellow-500 text-white border-yellow-600">
+                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
                       En Revisión Comercial
                     </Badge>
                   )}

@@ -3,6 +3,7 @@ import { AppLayout } from "./components/layout/app-layout"
 import { ThemeProvider } from "./shared/hooks/useTheme"
 import { AuthProvider } from "./shared/context/auth-context"
 import { ProtectedRoute } from "./shared/components/protected-route"
+import { Toaster } from "sonner"
 import DashboardPage from "./features/dashboard/dashboard-page"
 import ClientsPage from "./features/clients/clients-page"
 import ReportsPage from "./features/reports/reports-page"
@@ -13,7 +14,8 @@ import { AppraisalReportsView } from "./features/dashboard/components/appraisal-
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="system" storageKey="f-crm-theme">
+    <ThemeProvider defaultTheme="system" storageKey="intercapital-theme">
+      <Toaster richColors position="top-right" closeButton />
       <AuthProvider>
         <BrowserRouter>
           <Routes>

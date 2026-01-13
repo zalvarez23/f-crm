@@ -5,6 +5,7 @@ import { UsersTable } from "../components/users-table"
 import { UserDialog } from "../components/user-dialog"
 import { usersService } from "../services/users.service"
 import type { UserProfile } from "@/shared/types/user.types"
+import { toast } from "sonner"
 
 export default function UsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([])
@@ -19,6 +20,7 @@ export default function UsersPage() {
       setUsers(data)
     } catch (error) {
       console.error("Error loading users:", error)
+      toast.error("Error al cargar usuarios")
     } finally {
       setLoading(false)
     }
@@ -39,12 +41,14 @@ export default function UsersPage() {
   }
 
   const handleDeleteUser = async (uid: string) => {
+    if (!confirm("¿Está seguro de eliminar este usuario?")) return
     try {
       await usersService.delete(uid)
+      toast.success("Usuario eliminado exitosamente")
       loadUsers()
     } catch (error) {
       console.error("Error deleting user:", error)
-      alert("Error al eliminar usuario")
+      toast.error("Error al eliminar usuario")
     }
   }
 

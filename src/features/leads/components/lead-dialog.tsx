@@ -30,6 +30,7 @@ import {
 import { Loader2 } from "lucide-react"
 import type { UserProfile } from "@/shared/types/user.types"
 import { leadsService } from "../services/leads.service"
+import { toast } from "sonner"
 
 const formSchema = z.object({
   name: z.string().min(2, "El nombre es requerido"),
@@ -78,12 +79,13 @@ export function LeadDialog({ open, onOpenChange, executives, onSuccess }: LeadDi
             source: 'manual'
         }, isRandom ? 'random' : 'equitable')
 
+        toast.success("Lead creado exitosamente")
         onSuccess()
         onOpenChange(false)
         form.reset()
     } catch (error) {
         console.error(error)
-        alert("Error al crear el lead")
+        toast.error("Error al crear el lead")
     } finally {
         setIsLoading(false)
     }

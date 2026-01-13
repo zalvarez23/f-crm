@@ -10,6 +10,7 @@ import { CheckCircle2, XCircle, Calendar, AlertTriangle } from "lucide-react"
 import type { Lead } from "../types/leads.types"
 import { leadsService } from "../services/leads.service"
 import { serverTimestamp } from "firebase/firestore"
+import { toast } from "sonner"
 
 interface CloserFollowUpFormProps {
   lead: Lead
@@ -78,7 +79,7 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
       await onSuccess()
     } catch (error) {
       console.error('Error saving attendance:', error)
-      alert('Error al guardar asistencia')
+      toast.error('Error al guardar asistencia')
     } finally {
       setIsLoading(false)
     }
@@ -86,7 +87,7 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
 
   const handleMarkAsLost = async () => {
     if (!lostReason.trim()) {
-      alert('Por favor ingrese el motivo por el cual se perdió el lead')
+      toast.error('Por favor ingrese el motivo por el cual se perdió el lead')
       return
     }
     if (!confirm('¿Está seguro de marcar este lead como perdido?')) return
@@ -104,11 +105,11 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
         },
         status: 'rechazado'
       })
-      alert('Lead marcado como perdido')
+      toast.success('Lead marcado como perdido')
       onSuccess()
     } catch (error) {
       console.error('Error marking as lost:', error)
-      alert('Error al marcar como perdido')
+      toast.error('Error al marcar como perdido')
     } finally {
       setIsLoading(false)
     }
@@ -132,11 +133,11 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
           rescheduledBy: currentUserId
         }
       })
-      alert('Lead listo para reprogramación. Se ha devuelto al ejecutivo.')
+      toast.success('Lead listo para reprogramación. Se ha devuelto al ejecutivo.')
       onSuccess()
     } catch (error) {
       console.error('Error rescheduling lead:', error)
-      alert('Error al solicitar reprogramación')
+      toast.error('Error al solicitar reprogramación')
     } finally {
       setIsLoading(false)
     }
@@ -144,34 +145,34 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
 
   const handleSaveClientInfo = async () => {
     if (acceptsTerms === undefined) {
-      alert('Por favor indique si el cliente acepta los términos')
+      toast.error('Por favor indique si el cliente acepta los términos')
       return
     }
     if (!clientIncome || Number(clientIncome) <= 0) {
-      alert('Por favor ingrese los ingresos del cliente')
+      toast.error('Por favor ingrese los ingresos del cliente')
       return
     }
     if (!loanReason.trim()) {
-      alert('Por favor ingrese el motivo del préstamo')
+      toast.error('Por favor ingrese el motivo del préstamo')
       return
     }
     if (!agreedQuota || Number(agreedQuota) <= 0) {
-      alert('Por favor ingrese el acuerdo de cuota')
+      toast.error('Por favor ingrese el acuerdo de cuota')
       return
     }
     if (!paymentPlan.trim()) {
-      alert('Por favor ingrese la modalidad y plan de pago')
+      toast.error('Por favor ingrese la modalidad y plan de pago')
       return
     }
     // Only require paidAppraisal if it's not already handled by commitment/lost
     if (paidAppraisal === undefined && !paymentCommitmentDate && !lead.closerFollowUp?.lostDueToNonPayment) {
-      alert('Por favor indique si realizó el pago de tasación')
+      toast.error('Por favor indique si realizó el pago de tasación')
       return
     }
     
     // If appraisal not paid, require commitment date or lost status
     if (paidAppraisal === false && !paymentCommitmentDate && !lead.closerFollowUp?.lostDueToNonPayment) {
-      alert('Por favor ingrese la fecha de compromiso de pago')
+      toast.error('Por favor ingrese la fecha de compromiso de pago')
       return
     }
 
@@ -191,11 +192,11 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
           paymentCommitmentDate: paidAppraisal === false ? paymentCommitmentDate : undefined
         }
       })
-      alert('Información del cliente guardada exitosamente')
+      toast.success('Información del cliente guardada exitosamente')
       onSuccess()
     } catch (error) {
       console.error('Error saving client info:', error)
-      alert('Error al guardar información del cliente')
+      toast.error('Error al guardar información del cliente')
     } finally {
       setIsLoading(false)
     }
@@ -440,11 +441,11 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
                                 } as any
                               })
                               setPaidAppraisal(true)
-                              alert('Pago confirmado exitosamente')
+                              toast.success('Pago confirmado exitosamente')
                               onSuccess()
                             } catch (error) {
                               console.error('Error confirming payment:', error)
-                              alert('Error al confirmar pago')
+                              toast.error('Error al confirmar pago')
                             } finally {
                               setIsLoading(false)
                             }
@@ -506,7 +507,7 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
                         className="w-full bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 shadow-sm"
                         onClick={async () => {
                           if (!lostReason.trim()) {
-                            alert('Por favor ingrese el motivo de la pérdida')
+                            toast.error('Por favor ingrese el motivo de la pérdida')
                             return
                           }
                           if (!confirm('¿Está seguro de marcar este lead como perdido por falta de pago? Esta acción rechazará el lead.')) return
@@ -521,11 +522,11 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
                               } as any,
                               status: 'rechazado'
                             })
-                            alert('Lead marcado como perdido por no pago')
+                            toast.success('Lead marcado como perdido por no pago')
                             onSuccess()
                           } catch (error) {
                             console.error('Error marking as lost due to non-payment:', error)
-                            alert('Error al marcar como perdido')
+                            toast.error('Error al marcar como perdido')
                           } finally {
                             setIsLoading(false)
                           }

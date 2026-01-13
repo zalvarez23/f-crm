@@ -25,6 +25,7 @@ import type { Lead } from "../types/leads.types";
 import { leadsService } from "../services/leads.service";
 import { useAuth } from "@/shared/context/auth-context";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   legalComments: z
@@ -68,7 +69,7 @@ export function LegalReviewDialog({
       setAction(null);
     } catch (error) {
       console.error(error);
-      alert("Error al aprobar el lead");
+      toast.error("Error al aprobar el lead");
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +87,7 @@ export function LegalReviewDialog({
       setAction(null);
     } catch (error) {
       console.error(error);
-      alert("Error al rechazar el lead");
+      toast.error("Error al rechazar el lead");
     } finally {
       setIsLoading(false);
     }

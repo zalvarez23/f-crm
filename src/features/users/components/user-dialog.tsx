@@ -30,6 +30,7 @@ import {
 import { Loader2 } from "lucide-react"
 import type { UserProfile } from "@/shared/types/user.types"
 import { usersService } from "../services/users.service"
+import { toast } from "sonner"
 
 const formSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters"),
@@ -85,12 +86,13 @@ export function UserDialog({ open, onOpenChange, userToEdit, onSuccess }: UserDi
                 role: values.role
             })
         }
+        toast.success(isEditing ? "Usuario actualizado exitosamente" : "Usuario creado exitosamente")
         onSuccess()
         onOpenChange(false)
         form.reset()
     } catch (error: any) {
         console.error(error)
-        alert("Error al guardar: " + (error.message || "Error desconocido"))
+        toast.error("Error al guardar: " + (error.message || "Error desconocido"))
     } finally {
         setIsLoading(false)
     }

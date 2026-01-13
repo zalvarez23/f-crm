@@ -8,6 +8,7 @@ import { CheckCircle2, Upload, FileText, Loader2, History, Clock } from "lucide-
 import type { Lead } from "../types/leads.types"
 import { leadsService } from "../services/leads.service"
 import { serverTimestamp } from "firebase/firestore"
+import { toast } from "sonner"
 import {
   Accordion,
   AccordionContent,
@@ -42,13 +43,13 @@ export function AppraisalForm({ lead, currentUserId, onSuccess }: AppraisalFormP
     console.log('🚀 Starting appraisal submission')
     
     if (!price || !situation || !area || !usage) {
-      alert('Por favor complete todos los campos requeridos')
+      toast.error('Por favor complete todos los campos requeridos')
       return
     }
 
     if (!lead.id) {
       console.error('❌ Lead ID is missing')
-      alert('Error: Lead ID is missing')
+      toast.error('Error: Lead ID is missing')
       return
     }
 
@@ -104,12 +105,12 @@ export function AppraisalForm({ lead, currentUserId, onSuccess }: AppraisalFormP
       await leadsService.updateLead(lead.id, updateData)
       console.log('✅ Lead updated successfully')
 
-      alert(isCompleted ? 'Tasación actualizada exitosamente' : 'Tasación registrada exitosamente')
+      toast.success(isCompleted ? 'Tasación actualizada exitosamente' : 'Tasación registrada exitosamente')
       setIsEditing(false)
       onSuccess()
     } catch (error) {
-      console.error('❌ Error saving appraisal:', error)
-      alert(`Error al guardar la tasación: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error('❌ Error al guardar tasación:', error)
+      toast.error(`Error al guardar la tasación: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     } finally {
       console.log('🏁 Submission process finished')
       setIsLoading(false)
