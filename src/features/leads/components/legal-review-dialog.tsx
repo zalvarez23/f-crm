@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { Check, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Check, X, FileText, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -8,7 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -16,84 +16,91 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Textarea } from "@/components/ui/textarea"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
-import type { Lead } from "../types/leads.types"
-import { leadsService } from "../services/leads.service"
-import { useAuth } from "@/shared/context/auth-context"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import type { Lead } from "../types/leads.types";
+import { leadsService } from "../services/leads.service";
+import { useAuth } from "@/shared/context/auth-context";
+import { Badge } from "@/components/ui/badge";
 
 const formSchema = z.object({
-  legalComments: z.string().min(10, "Los comentarios deben tener al menos 10 caracteres"),
-})
+  legalComments: z
+    .string()
+    .min(10, "Los comentarios deben tener al menos 10 caracteres"),
+});
 
 interface LegalReviewDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  lead: Lead | null
-  onSuccess: () => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  lead: Lead | null;
+  onSuccess: () => void;
 }
 
-export function LegalReviewDialog({ open, onOpenChange, lead, onSuccess }: LegalReviewDialogProps) {
-  const { user } = useAuth()
-  const [isLoading, setIsLoading] = useState(false)
-  const [action, setAction] = useState<'approve' | 'reject' | null>(null)
+export function LegalReviewDialog({
+  open,
+  onOpenChange,
+  lead,
+  onSuccess,
+}: LegalReviewDialogProps) {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const [action, setAction] = useState<"approve" | "reject" | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       legalComments: "",
     },
-  })
+  });
 
   async function handleApprove(values: z.infer<typeof formSchema>) {
-    if (!lead?.id || !user) return
+    if (!lead?.id || !user) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await leadsService.approveLead(lead.id, values.legalComments, user.uid)
-      onSuccess()
-      onOpenChange(false)
-      form.reset()
-      setAction(null)
+      await leadsService.approveLead(lead.id, values.legalComments, user.uid);
+      onSuccess();
+      onOpenChange(false);
+      form.reset();
+      setAction(null);
     } catch (error) {
-      console.error(error)
-      alert("Error al aprobar el lead")
+      console.error(error);
+      alert("Error al aprobar el lead");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   async function handleReject(values: z.infer<typeof formSchema>) {
-    if (!lead?.id || !user) return
+    if (!lead?.id || !user) return;
 
-    setIsLoading(true)
+    setIsLoading(true);
     try {
-      await leadsService.rejectLead(lead.id, values.legalComments, user.uid)
-      onSuccess()
-      onOpenChange(false)
-      form.reset()
-      setAction(null)
+      await leadsService.rejectLead(lead.id, values.legalComments, user.uid);
+      onSuccess();
+      onOpenChange(false);
+      form.reset();
+      setAction(null);
     } catch (error) {
-      console.error(error)
-      alert("Error al rechazar el lead")
+      console.error(error);
+      alert("Error al rechazar el lead");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    if (action === 'approve') {
-      handleApprove(values)
-    } else if (action === 'reject') {
-      handleReject(values)
+    if (action === "approve") {
+      handleApprove(values);
+    } else if (action === "reject") {
+      handleReject(values);
     }
   }
 
-  if (!lead) return null
+  if (!lead) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -101,7 +108,8 @@ export function LegalReviewDialog({ open, onOpenChange, lead, onSuccess }: Legal
         <DialogHeader>
           <DialogTitle>Revisión Legal - {lead.name}</DialogTitle>
           <DialogDescription>
-            Revisa la información y documentos del lead antes de aprobar o rechazar
+            Revisa la información y documentos del lead antes de aprobar o
+            rechazar
           </DialogDescription>
         </DialogHeader>
 
@@ -119,8 +127,8 @@ export function LegalReviewDialog({ open, onOpenChange, lead, onSuccess }: Legal
                 <Badge variant="outline">{lead.substatus || "N/A"}</Badge>
               </div>
               <div>
-                <span className="text-muted-foreground">Monto:</span>{" "}
-                S/ {lead.amount?.toLocaleString()}
+                <span className="text-muted-foreground">Monto:</span> S/{" "}
+                {lead.amount?.toLocaleString()}
               </div>
               <div>
                 <span className="text-muted-foreground">Tasa:</span>{" "}
@@ -134,36 +142,91 @@ export function LegalReviewDialog({ open, onOpenChange, lead, onSuccess }: Legal
             <h3 className="font-semibold mb-2">Documentos</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="flex items-center gap-2">
-                {lead.documents?.dni ? (
+                {lead.files?.dni?.fileUrl || lead.documents?.dni ? (
                   <Check className="h-4 w-4 text-green-500" />
                 ) : (
                   <X className="h-4 w-4 text-red-500" />
                 )}
                 <span>DNI</span>
+                {(lead.files?.dni?.fileUrl || lead.documents?.dni) && (
+                  <div
+                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 cursor-pointer text-sm ml-auto"
+                    onClick={() => {
+                      const url =
+                        lead.files?.dni?.fileUrl || lead.documents?.dni;
+                      if (url) window.open(url, "_blank");
+                    }}
+                  >
+                    <span>Ver</span>
+                    <ExternalLink className="h-4 w-4" />
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
-                {lead.documents?.puhr ? (
+                {lead.files?.puhr?.fileUrl || lead.documents?.puhr ? (
                   <Check className="h-4 w-4 text-green-500" />
                 ) : (
                   <X className="h-4 w-4 text-red-500" />
                 )}
                 <span>PUHR</span>
+                {(lead.files?.puhr?.fileUrl || lead.documents?.puhr) && (
+                  <div
+                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 cursor-pointer text-sm ml-auto"
+                    onClick={() => {
+                      const url =
+                        lead.files?.puhr?.fileUrl || lead.documents?.puhr;
+                      if (url) window.open(url, "_blank");
+                    }}
+                  >
+                    <span>Ver</span>
+                    <ExternalLink className="h-4 w-4" />
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
-                {lead.documents?.copiaLiteral ? (
+                {lead.files?.copiaLiteral?.fileUrl ||
+                lead.documents?.copiaLiteral ? (
                   <Check className="h-4 w-4 text-green-500" />
                 ) : (
                   <X className="h-4 w-4 text-red-500" />
                 )}
                 <span>Copia Literal</span>
+                {(lead.files?.copiaLiteral?.fileUrl ||
+                  lead.documents?.copiaLiteral) && (
+                  <div
+                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 cursor-pointer text-sm ml-auto"
+                    onClick={() => {
+                      const url =
+                        lead.files?.copiaLiteral?.fileUrl ||
+                        lead.documents?.copiaLiteral;
+                      if (url) window.open(url, "_blank");
+                    }}
+                  >
+                    <span>Ver</span>
+                    <ExternalLink className="h-4 w-4" />
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2">
-                {lead.documents?.casa ? (
+                {lead.files?.casa?.fileUrl || lead.documents?.casa ? (
                   <Check className="h-4 w-4 text-green-500" />
                 ) : (
                   <X className="h-4 w-4 text-red-500" />
                 )}
                 <span>Casa</span>
+                {(lead.files?.casa?.fileUrl || lead.documents?.casa) && (
+                  <div
+                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 cursor-pointer text-sm ml-auto"
+                    onClick={() => {
+                      const url =
+                        lead.files?.casa?.fileUrl || lead.documents?.casa;
+                      if (url) window.open(url, "_blank");
+                    }}
+                  >
+                    <span>Ver</span>
+                    <ExternalLink className="h-4 w-4" />
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -194,9 +257,9 @@ export function LegalReviewDialog({ open, onOpenChange, lead, onSuccess }: Legal
                   type="button"
                   variant="outline"
                   onClick={() => {
-                    onOpenChange(false)
-                    form.reset()
-                    setAction(null)
+                    onOpenChange(false);
+                    form.reset();
+                    setAction(null);
                   }}
                   disabled={isLoading}
                 >
@@ -205,7 +268,7 @@ export function LegalReviewDialog({ open, onOpenChange, lead, onSuccess }: Legal
                 <Button
                   type="submit"
                   variant="destructive"
-                  onClick={() => setAction('reject')}
+                  onClick={() => setAction("reject")}
                   disabled={isLoading}
                 >
                   <X className="mr-2 h-4 w-4" />
@@ -213,7 +276,7 @@ export function LegalReviewDialog({ open, onOpenChange, lead, onSuccess }: Legal
                 </Button>
                 <Button
                   type="submit"
-                  onClick={() => setAction('approve')}
+                  onClick={() => setAction("approve")}
                   disabled={isLoading}
                   className="bg-green-600 hover:bg-green-700"
                 >
@@ -226,5 +289,5 @@ export function LegalReviewDialog({ open, onOpenChange, lead, onSuccess }: Legal
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

@@ -59,8 +59,9 @@ export function AppraisalForm({ lead, currentUserId, onSuccess }: AppraisalFormP
       // TODO: Enable PDF upload once CORS is configured
       if (reportFile) {
         console.log('⬆️ Uploading document...')
-        reportUrl = await leadsService.uploadDocument(lead.id, reportFile, 'tasacion')
-        console.log('✅ Document uploaded, URL:', reportUrl)
+        const fileData = await leadsService.uploadDocument(lead.id, reportFile, 'tasacion')
+        reportUrl = fileData.fileUrl
+        console.log('✅ Document uploaded, URL:', reportUrl, 'Filename:', fileData.filename)
       }
 
       const updateData: any = {
