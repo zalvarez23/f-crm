@@ -2,7 +2,6 @@ import { collection, addDoc, getDocs, doc, updateDoc, query, where, serverTimest
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"
 import { db, storage } from "@/lib/firebase"
 import type { Lead } from "../types/leads.types"
-import { localDb } from "@/shared/lib/local-db"
 
 export const leadsService = {
     async uploadLeads(
@@ -11,27 +10,7 @@ export const leadsService = {
         executiveIds: string[] = [],
         leadType: 'loan' | 'investment' = 'loan'
     ): Promise<void> {
-        // Priority 1: Local Mode
-        if (localDb.isLocalMode()) {
-            const existingLeads = JSON.parse(localStorage.getItem('f-crm-leads') || '[]')
-            const newLeads = leads.map((lead, index) => {
-                let assignedTo = lead.assignedTo
-                if (distributionMethod === 'round-robin' && executiveIds.length > 0) {
-                    assignedTo = executiveIds[index % executiveIds.length]
-                }
-                return {
-                    ...lead,
-                    id: `local-lead-${Date.now()}-${index}`,
-                    status: 'nuevo' as const,
-                    assignedTo,
-                    leadType,
-                    source: 'excel-upload',
-                    createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
-                }
-            })
-            this._saveLocalLeads([...existingLeads, ...newLeads])
-            return
-        }
+
 
         try {
             const batch = writeBatch(db)
@@ -68,39 +47,13 @@ export const leadsService = {
 
             await batch.commit()
         } catch (error: any) {
+
             console.warn("leadsService: Failed to upload leads to Firestore", error)
-            if (error.code === 'permission-denied' || error.message?.includes('Unsupported field value: undefined')) {
-                localDb.setLocalMode(true)
-                return this.uploadLeads(leads, distributionMethod, executiveIds, leadType)
-            }
             throw error
         }
     },
 
     async createLead(leadData: Omit<Lead, 'id'>, distributionMethod: 'equitable' | 'random'): Promise<void> {
-        // Priority 1: Local Mode
-        if (localDb.isLocalMode()) {
-            const existingLeads = this._getLocalLeads()
-            let assignedTo = leadData.assignedTo
-
-            if (distributionMethod === 'random') {
-                const role = leadData.leadType === 'investment' ? "investment_executive" : "loan_executive"
-                const executives = localDb.getUsers().filter(u => u.role === role)
-                if (executives.length > 0) {
-                    assignedTo = executives[Math.floor(Math.random() * executives.length)].uid
-                }
-            }
-
-            const newLead = {
-                ...leadData,
-                id: `local-lead-${Date.now()}`,
-                status: 'nuevo' as const,
-                assignedTo: assignedTo || null,
-                createdAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
-            }
-            this._saveLocalLeads([...existingLeads, newLead])
-            return
-        }
 
         try {
             const data: any = {
@@ -132,32 +85,16 @@ export const leadsService = {
 
             await addDoc(collection(db, "leads"), cleanData)
         } catch (error: any) {
+
             console.warn("leadsService: Failed to create lead in Firestore", error)
             // Switch to local mode for permissions, invalid data (if it means we should go local), or connection issues
-            if (error.code === 'permission-denied' || error.message?.includes('Unsupported field value: undefined')) {
-                localDb.setLocalMode(true)
-                return this.createLead(leadData, distributionMethod)
-            }
             throw error
         }
     },
 
 
-    _getLocalLeads(): Lead[] {
-        return JSON.parse(localStorage.getItem('f-crm-leads') || '[]')
-    },
-
-    _saveLocalLeads(leads: Lead[]): void {
-        localStorage.setItem('f-crm-leads', JSON.stringify(leads))
-        window.dispatchEvent(new CustomEvent('local-db-update', { detail: localDb.getUsers() }))
-    },
 
     async getLeadsByExecutive(executiveId: string): Promise<Lead[]> {
-        if (localDb.isLocalMode()) {
-            const allLeads = this._getLocalLeads()
-            const filtered = allLeads.filter(l => l.assignedTo === executiveId || l.previousOwner === executiveId)
-            return filtered.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
-        }
 
         console.log(`🔍 Getting leads for executive: ${executiveId}`)
         
@@ -196,14 +133,6 @@ export const leadsService = {
     },
 
     async getLeadsByCloser(closerId: string): Promise<Lead[]> {
-        if (localDb.isLocalMode()) {
-            const allLeads = this._getLocalLeads()
-            const filtered = allLeads.filter(l => l.closerAssignedTo === closerId)
-            return filtered.sort((a, b) => {
-                if (!a.appointment?.date || !b.appointment?.date) return 0
-                return new Date(a.appointment.date).getTime() - new Date(b.appointment.date).getTime()
-            })
-        }
 
         console.log(`🔍 Getting leads for closer: ${closerId}`)
         
@@ -227,15 +156,6 @@ export const leadsService = {
     },
 
     async getLeadsForAppraisalManager(): Promise<Lead[]> {
-        if (localDb.isLocalMode()) {
-            const allLeads = this._getLocalLeads()
-            const filtered = allLeads.filter(l => l.closerFollowUp?.paidAppraisal === true)
-            return filtered.sort((a, b) => {
-                const aTime = (a.closerFollowUp?.paymentDate as any)?.seconds || 0
-                const bTime = (b.closerFollowUp?.paymentDate as any)?.seconds || 0
-                return bTime - aTime
-            })
-        }
 
         console.log(`🔍 Getting leads for appraisal manager`)
         
@@ -260,10 +180,6 @@ export const leadsService = {
     },
 
     async getLeadsByLegal(): Promise<Lead[]> {
-        if (localDb.isLocalMode()) {
-            const allLeads = this._getLocalLeads()
-            return allLeads.filter(l => l.assignedTo === null)
-        }
 
         const q = query(
             collection(db, "leads"),
@@ -277,10 +193,6 @@ export const leadsService = {
     },
 
     async getUnassignedLeads(): Promise<Lead[]> {
-        if (localDb.isLocalMode()) {
-            const allLeads = this._getLocalLeads()
-            return allLeads.filter(l => l.assignedTo === null)
-        }
 
         const q = query(
             collection(db, "leads"),
@@ -294,9 +206,6 @@ export const leadsService = {
     },
 
     async getAllLeads(): Promise<Lead[]> {
-        if (localDb.isLocalMode()) {
-            return this._getLocalLeads()
-        }
 
         try {
             const snapshot = await getDocs(collection(db, "leads"))
@@ -305,11 +214,8 @@ export const leadsService = {
                 ...doc.data()
             } as Lead))
         } catch (error: any) {
+
             console.warn("leadsService: Failed to get all leads from Firestore", error)
-            if (error.code === 'permission-denied') {
-                localDb.setLocalMode(true)
-                return this.getAllLeads()
-            }
             throw error
         }
     },
@@ -319,18 +225,9 @@ export const leadsService = {
         pendingLeads: number
         contactedLeads: number
     }> {
-        if (localDb.isLocalMode()) {
-            const allLeads = this._getLocalLeads()
-            const pendingLeads = allLeads.filter(lead => lead.status === 'nuevo')
-            const contactedLeads = allLeads.filter(lead => lead.status !== 'nuevo')
-            return {
-                totalLeads: allLeads.length,
-                pendingLeads: pendingLeads.length,
-                contactedLeads: contactedLeads.length
-            }
-        }
         
         try {
+
             const allLeads = await this.getAllLeads()
             const pendingLeads = allLeads.filter(lead => lead.status === 'nuevo')
             const contactedLeads = allLeads.filter(lead => lead.status !== 'nuevo')
@@ -341,24 +238,13 @@ export const leadsService = {
                 contactedLeads: contactedLeads.length
             }
         } catch (error: any) {
-            if (error.code === 'permission-denied') localDb.setLocalMode(true)
             return { totalLeads: 0, pendingLeads: 0, contactedLeads: 0 }
         }
     },
 
     async getLeadsByExecutiveCount(): Promise<{ executiveId: string; count: number }[]> {
-        if (localDb.isLocalMode()) {
-            const allLeads = this._getLocalLeads()
-            const countMap = new Map<string, number>()
-            allLeads.forEach(lead => {
-                if (lead.assignedTo) {
-                    countMap.set(lead.assignedTo, (countMap.get(lead.assignedTo) || 0) + 1)
-                }
-            })
-            return Array.from(countMap.entries()).map(([executiveId, count]) => ({ executiveId, count }))
-        }
-
         try {
+
             const allLeads = await this.getAllLeads()
             const countMap = new Map<string, number>()
 
@@ -373,110 +259,11 @@ export const leadsService = {
                 count
             }))
         } catch (error: any) {
-            if (error.code === 'permission-denied') localDb.setLocalMode(true)
             return []
         }
     },
 
     async updateLead(leadId: string, data: Partial<Lead>): Promise<void> {
-        if (localDb.isLocalMode()) {
-            const leads = this._getLocalLeads()
-            const index = leads.findIndex(l => l.id === leadId)
-            if (index !== -1) {
-                const currentLead = leads[index]
-                const cleanData = { ...data }
-                // Remove serverTimestamp placeholders from nested objects if they are from online mode calls
-                if (cleanData.closerFollowUp) {
-                    Object.keys(cleanData.closerFollowUp).forEach(key => {
-                        const val = (cleanData.closerFollowUp as any)[key]
-                        if (val && typeof val === 'object' && !val.seconds && val.constructor?.name === 'Object') {
-                            // This looks like a serverTimestamp placeholder that couldn't be serialized
-                            delete (cleanData.closerFollowUp as any)[key]
-                        }
-                    })
-                }
-
-                const updateData: any = { 
-                    ...cleanData, 
-                    updatedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 } 
-                }
-
-                // Deep merge closerFollowUp
-                if (cleanData.closerFollowUp && currentLead.closerFollowUp) {
-                    updateData.closerFollowUp = {
-                        ...currentLead.closerFollowUp,
-                        ...cleanData.closerFollowUp
-                    }
-                }
-
-                // If status is changing from 'nuevo' to something else, set contactedAt
-                if (data.status && data.status !== 'nuevo' && currentLead.status === 'nuevo' && !currentLead.contactedAt) {
-                    updateData.contactedAt = { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
-                }
-
-                // Check for automatic transfer to Legal
-                if (data.status === 'contactado' && data.substatus === 'en_validacion') {
-                    console.log('🔄 Triggering transfer to Legal (Local Mode)...')
-                    const legalUsers = localDb.getUsers().filter(u => u.role === 'legal')
-                    if (legalUsers.length > 0) {
-                        const randomLegal = legalUsers[Math.floor(Math.random() * legalUsers.length)]
-                        updateData.transferredTo = 'legal'
-                        updateData.transferredAt = { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
-                        updateData.previousOwner = currentLead.assignedTo
-                        updateData.assignedTo = randomLegal.uid
-                        updateData.legalStatus = 'pending_review'
-                        console.log(`✅ Transferred to legal user: ${randomLegal.displayName} (${randomLegal.uid})`)
-                    } else {
-                        console.warn('⚠️ No legal users found in Local Mode. Transfer skipped.')
-                    }
-                }
-
-                // Check for automatic assignment to Closer (Broadened trigger)
-                const hasFullApptLocal = (data.appointment?.date && data.appointment?.time && data.appointment?.type) ||
-                                         (currentLead.appointment?.date && currentLead.appointment?.time && currentLead.appointment?.type);
-                const isApprovedLocal = currentLead.legalStatus === 'approved' && currentLead.commercialStatus === 'approved';
-                const needsAssignLocal = !currentLead.closerAssignedTo || currentLead.substatus === 'reprogramar' || data.substatus === 'cita';
-
-                if (hasFullApptLocal && isApprovedLocal && needsAssignLocal) {
-                    const closerUsers = localDb.getUsers().filter(u => u.role === 'closer')
-                    if (closerUsers.length > 0) {
-                        updateData.appointmentLocked = true
-                        // Prefer existing closer if already assigned
-                        const existingCloser = closerUsers.find(u => u.uid === currentLead.closerAssignedTo)
-                        const selectedCloser = existingCloser || closerUsers[Math.floor(Math.random() * closerUsers.length)]
-                        
-                        updateData.closerAssignedTo = selectedCloser.uid
-                        updateData.closerAssignedAt = { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
-                        updateData.previousOwner = currentLead.assignedTo
-                        updateData.assignedTo = selectedCloser.uid
-                        updateData.appointment = {
-                            ...data.appointment,
-                            scheduledAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
-                            scheduledBy: currentLead.assignedTo
-                        }
-                        
-                        // Reschedule/Initial Assignment logic: Clear previous follow-ups
-                        updateData.substatus = 'cita'
-                        updateData.closerFollowUp = {
-                            ...(currentLead.closerFollowUp || {}),
-                            clientAttended: null,
-                            markedAsLost: false,
-                            lostReason: null,
-                            lostDueToNonPayment: false,
-                            attendanceRecordedAt: null,
-                            attendanceRecordedBy: null
-                        }
-                        console.log(`✅ Closer assigned: ${selectedCloser.displayName} (${selectedCloser.uid})`)
-                    } else {
-                        console.warn('⚠️ No closer users found in Local Mode. Assignment skipped.')
-                    }
-                }
-
-                leads[index] = { ...currentLead, ...updateData }
-                this._saveLocalLeads(leads)
-            }
-            return
-        }
 
         try {
             const docRef = doc(db, "leads", leadId)
@@ -619,11 +406,8 @@ export const leadsService = {
 
             await updateDoc(docRef, cleanData)
         } catch (error: any) {
+
             console.warn("leadsService: Failed to update lead in Firestore", error)
-            if (error.code === 'permission-denied' || error.message?.includes('Unsupported field value: undefined')) {
-                localDb.setLocalMode(true)
-                return this.updateLead(leadId, data)
-            }
             throw error
         }
     },
@@ -654,38 +438,6 @@ export const leadsService = {
     },
 
     async approveLead(leadId: string, legalComments: string, legalUserId: string): Promise<void> {
-        if (localDb.isLocalMode()) {
-            const leads = this._getLocalLeads()
-            const index = leads.findIndex(l => l.id === leadId)
-            if (index !== -1) {
-                const currentLead = leads[index]
-                const updateData: any = {
-                    legalStatus: 'approved',
-                    legalComments,
-                    legalReviewedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
-                    legalReviewedBy: legalUserId,
-                    updatedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
-                }
-
-                const commercialUsers = localDb.getUsers().filter(u => u.role === 'commercial')
-                if (commercialUsers.length > 0) {
-                    const randomCommercial = commercialUsers[Math.floor(Math.random() * commercialUsers.length)]
-                    updateData.transferredTo = 'commercial'
-                    updateData.transferredAt = { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
-                    if (!currentLead.previousOwner) {
-                        updateData.previousOwner = currentLead.assignedTo
-                    }
-                    updateData.assignedTo = randomCommercial.uid
-                    updateData.commercialStatus = 'pending_review'
-                    console.log(`✅ Transferred to commercial user: ${randomCommercial.displayName} (${randomCommercial.uid})`)
-                } else {
-                    console.warn('⚠️ No commercial users found in Local Mode. Transfer skipped.')
-                }
-                leads[index] = { ...currentLead, ...updateData }
-                this._saveLocalLeads(leads)
-            }
-            return
-        }
 
         try {
             const docRef = doc(db, "leads", leadId)
@@ -732,35 +484,12 @@ export const leadsService = {
             })
             await updateDoc(docRef, cleanData)
         } catch (error: any) {
-            if (error.code === 'permission-denied') {
-                localDb.setLocalMode(true)
-                return this.approveLead(leadId, legalComments, legalUserId)
-            }
+
             throw error
         }
     },
 
     async rejectLead(leadId: string, legalComments: string, legalUserId: string): Promise<void> {
-        if (localDb.isLocalMode()) {
-            const leads = this._getLocalLeads()
-            const index = leads.findIndex(l => l.id === leadId)
-            if (index !== -1) {
-                const currentLead = leads[index]
-                leads[index] = {
-                    ...currentLead,
-                    legalStatus: 'rejected',
-                    legalComments,
-                    legalReviewedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
-                    legalReviewedBy: legalUserId,
-                    status: 'rechazado',
-                    assignedTo: currentLead.previousOwner,
-                    transferredTo: null,
-                    updatedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
-                }
-                this._saveLocalLeads(leads)
-            }
-            return
-        }
 
         try {
             const docRef = doc(db, "leads", leadId)
@@ -785,34 +514,12 @@ export const leadsService = {
             })
             await updateDoc(docRef, cleanData)
         } catch (error: any) {
-            if (error.code === 'permission-denied') {
-                localDb.setLocalMode(true)
-                return this.rejectLead(leadId, legalComments, legalUserId)
-            }
+
             throw error
         }
     },
 
     async approveCommercialLead(leadId: string, commercialComments: string, commercialUserId: string): Promise<void> {
-        if (localDb.isLocalMode()) {
-            const leads = this._getLocalLeads()
-            const index = leads.findIndex(l => l.id === leadId)
-            if (index !== -1) {
-                leads[index] = {
-                    ...leads[index],
-                    commercialStatus: 'approved',
-                    commercialComments,
-                    commercialReviewedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
-                    commercialReviewedBy: commercialUserId,
-                    status: 'contactado',
-                    substatus: 'aprobado',
-                    assignedTo: leads[index].previousOwner || leads[index].assignedTo,
-                    updatedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
-                }
-                this._saveLocalLeads(leads)
-            }
-            return
-        }
 
         try {
             const docRef = doc(db, "leads", leadId)
@@ -835,36 +542,11 @@ export const leadsService = {
             })
             await updateDoc(docRef, cleanData)
         } catch (error: any) {
-            if (error.code === 'permission-denied') {
-                localDb.setLocalMode(true)
-                return this.approveCommercialLead(leadId, commercialComments, commercialUserId)
-            }
             throw error
         }
     },
 
     async rejectCommercialLead(leadId: string, commercialComments: string, commercialUserId: string): Promise<void> {
-        if (localDb.isLocalMode()) {
-            const leads = this._getLocalLeads()
-            const index = leads.findIndex(l => l.id === leadId)
-            if (index !== -1) {
-                const currentLead = leads[index]
-                leads[index] = {
-                    ...currentLead,
-                    commercialStatus: 'rejected',
-                    commercialComments,
-                    commercialReviewedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 },
-                    commercialReviewedBy: commercialUserId,
-                    status: 'rechazado',
-                    assignedTo: currentLead.previousOwner,
-                    transferredTo: null,
-                    updatedAt: { seconds: Math.floor(Date.now() / 1000), nanoseconds: 0 }
-                }
-                this._saveLocalLeads(leads)
-            }
-            return
-        }
-
         try {
             const docRef = doc(db, "leads", leadId)
             const leadDoc = await getDoc(docRef)
@@ -887,18 +569,10 @@ export const leadsService = {
             })
             await updateDoc(docRef, cleanData)
         } catch (error: any) {
-            if (error.code === 'permission-denied') {
-                localDb.setLocalMode(true)
-                return this.rejectCommercialLead(leadId, commercialComments, commercialUserId)
-            }
             throw error
         }
     },
     async deleteAllLeads(): Promise<void> {
-        if (localDb.isLocalMode()) {
-            localStorage.removeItem('f-crm-leads')
-            return
-        }
 
         try {
             const leadsSnapshot = await getDocs(collection(db, "leads"))
