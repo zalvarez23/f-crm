@@ -26,8 +26,17 @@ export function LegalDashboard() {
         if (!user) return
         
         try {
-            const myLeads = await leadsService.getLeadsByExecutive(user.uid)
-            setAllLeads(myLeads)
+            // 1. Get leads assigned to me (Pending)
+            const myAssignedLeads = await leadsService.getLeadsByExecutive(user.uid)
+            
+            // 2. Get leads I reviewed (Approved/Rejected)
+            const myReviewedLeads = await leadsService.getLeadsReviewedByUser(user.uid, 'legal')
+
+            // 3. Merge and deduplicate
+            const merged = [...myAssignedLeads, ...myReviewedLeads]
+            const unique = Array.from(new Map(merged.map(item => [item.id, item])).values())
+            
+            setAllLeads(unique)
         } catch (error) {
             console.error("Error loading leads:", error)
         } finally {

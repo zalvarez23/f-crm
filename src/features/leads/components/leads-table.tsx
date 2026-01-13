@@ -144,7 +144,7 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
                         Cita Programada
                       </Badge>
                       <div className="text-xs text-muted-foreground">
-                        <div>📅 {new Date(lead.appointment.date).toLocaleDateString('es-PE', { 
+                        <div>📅 {new Date(lead.appointment.date + 'T12:00:00').toLocaleDateString('es-PE', { 
                           day: '2-digit', 
                           month: 'short', 
                           year: 'numeric' 

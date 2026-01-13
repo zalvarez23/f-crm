@@ -10,6 +10,13 @@ import { DashboardStats } from "./dashboard-stats"
 export function ExecutiveDashboard() {
     const { user } = useAuth()
     const [leads, setLeads] = useState<Lead[]>([])
+    const [stats, setStats] = useState({
+        total: 0,
+        newLeads: 0,
+        appointments: 0,
+        pendingLegal: 0,
+        pendingCommercial: 0
+    })
     const [loading, setLoading] = useState(true)
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -31,9 +38,14 @@ export function ExecutiveDashboard() {
         
         try {
             console.log('📥 ExecutiveDashboard: Loading leads for user:', user.uid)
-            const myLeads = await leadsService.getLeadsByExecutive(user.uid)
+            const [myLeads, myStats] = await Promise.all([
+                leadsService.getLeadsByExecutive(user.uid),
+                leadsService.getExecutiveStats(user.uid)
+            ])
+            
             const filteredLeads = myLeads.filter(l => l.leadType === 'loan')
             setLeads(filteredLeads)
+            setStats(myStats)
             
             // Refresh selectedLead reference if dialog is open
             setSelectedLead(current => {
@@ -67,13 +79,34 @@ export function ExecutiveDashboard() {
             </div>
 
             {/* Stats */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <DashboardStats
-                    title="Leads Asignados"
-                    value={loading ? "..." : leads.length}
-                    description="Total de leads asignados a tu cuenta"
+                    title="Nuevos"
+                    value={loading ? "..." : stats.newLeads}
+                    description="Leads pendientes de primer contacto"
                     icon={PhoneCall}
                     iconColor="text-blue-500"
+                />
+                <DashboardStats
+                    title="Citas"
+                    value={loading ? "..." : stats.appointments}
+                    description="Leads con cita agendada"
+                    icon={PhoneCall}
+                    iconColor="text-green-500"
+                />
+                <DashboardStats
+                    title="Pte. Legal"
+                    value={loading ? "..." : stats.pendingLegal}
+                    description="A la espera de revisión legal"
+                    icon={PhoneCall}
+                    iconColor="text-orange-500"
+                />
+                <DashboardStats
+                    title="Pte. Comercial"
+                    value={loading ? "..." : stats.pendingCommercial}
+                    description="A la espera de revisión comercial"
+                    icon={PhoneCall}
+                    iconColor="text-purple-500"
                 />
             </div>
 

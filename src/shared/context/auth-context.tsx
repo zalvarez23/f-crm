@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react"
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore"
+import { collection, query, where, getDocs, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "@/lib/firebase"
 import type { UserProfile } from "../types/user.types"
 
@@ -89,7 +89,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
             const userDocRef = doc(db, "users", user.uid)
-            await updateDoc(userDocRef, { status })
+            const statusUpdatedAt = serverTimestamp()
+            
+            await updateDoc(userDocRef, { 
+                status,
+                statusUpdatedAt
+            })
+
+            // Log status change for time tracking
+            await addDoc(collection(db, "user_status_logs"), {
+                userId: user.uid,
+                status: status,
+                timestamp: statusUpdatedAt
+            })
         } catch (error: any) {
             console.warn("AuthContext: Firestore status update failed", error)
         }

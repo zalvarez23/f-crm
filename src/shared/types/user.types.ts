@@ -10,5 +10,6 @@ export interface UserProfile {
     displayName?: string
     photoURL?: string
     password?: string // Stored for custom auth (internal use only)
+    statusUpdatedAt?: any // Firestore Timestamp or Date
     createdAt: Date
 }

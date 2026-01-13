@@ -10,6 +10,13 @@ import { DashboardStats } from "./dashboard-stats"
 export function InvestmentDashboard() {
     const { user } = useAuth()
     const [leads, setLeads] = useState<Lead[]>([])
+    const [stats, setStats] = useState({
+        total: 0,
+        newLeads: 0,
+        appointments: 0,
+        pendingLegal: 0,
+        pendingCommercial: 0
+    })
     const [loading, setLoading] = useState(true)
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -26,8 +33,13 @@ export function InvestmentDashboard() {
         try {
             setLoading(true)
             // Get leads assigned to this executive
-            const myLeads = await leadsService.getLeadsByExecutive(user.uid)
+            const [myLeads, myStats] = await Promise.all([
+                leadsService.getLeadsByExecutive(user.uid),
+                leadsService.getExecutiveStats(user.uid)
+            ])
+            
             const filteredLeads = myLeads.filter(l => l.leadType === 'investment')
+            setStats(myStats)
             
             // For Investment Executive, we sort by amount descending
             const sortedLeads = [...filteredLeads].sort((a, b) => (Number(b.amount) || 0) - (Number(a.amount) || 0))
@@ -59,13 +71,34 @@ export function InvestmentDashboard() {
             </div>
 
             {/* Stats */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <DashboardStats
-                    title="Leads Asignados"
-                    value={loading ? "..." : leads.length}
-                    description="Total de leads para evaluación"
+                    title="Nuevos"
+                    value={loading ? "..." : stats.newLeads}
+                    description="Leads pendientes de primer contacto"
+                    icon={DollarSign}
+                    iconColor="text-blue-500"
+                />
+                <DashboardStats
+                    title="Citas"
+                    value={loading ? "..." : stats.appointments}
+                    description="Leads con cita agendada"
                     icon={DollarSign}
                     iconColor="text-green-500"
+                />
+                <DashboardStats
+                    title="Pte. Legal"
+                    value={loading ? "..." : stats.pendingLegal}
+                    description="A la espera de revisión legal"
+                    icon={DollarSign}
+                    iconColor="text-orange-500"
+                />
+                <DashboardStats
+                    title="Pte. Comercial"
+                    value={loading ? "..." : stats.pendingCommercial}
+                    description="A la espera de revisión comercial"
+                    icon={DollarSign}
+                    iconColor="text-purple-500"
                 />
             </div>
 

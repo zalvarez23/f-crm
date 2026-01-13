@@ -35,6 +35,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { ChevronDown, Circle } from "lucide-react"
 import type { UserStatus } from "@/shared/types/user.types"
+import { StatusTimer } from "@/shared/components/status-timer"
 
 // Menu items.
 interface MenuItem {
@@ -176,6 +177,12 @@ export function AppSidebar() {
                                         <span className="text-xs font-semibold truncate uppercase tracking-wider">
                                             {statusConfig[user.status || 'available'].label}
                                         </span>
+                                        {user.statusUpdatedAt && (
+                                            <StatusTimer 
+                                                timestamp={user.statusUpdatedAt} 
+                                                className="ml-auto bg-black/5 dark:bg-white/10 px-1.5 py-0.5 rounded text-[10px] font-bold"
+                                            />
+                                        )}
                                     </div>
                                     <ChevronDown className="h-3.5 w-3.5 opacity-50 shrink-0" />
                                 </Button>

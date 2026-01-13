@@ -326,7 +326,8 @@ export function LeadDetailDialog({ open, onOpenChange, lead, onSuccess }: LeadDe
                 Closer Follow-up
               </TabsTrigger>
             )}
-            {lead.closerFollowUp?.paidAppraisal && (
+            {lead.closerFollowUp?.paidAppraisal && 
+             ['appraisal_manager', 'supervisor', 'administrator', 'investment_executive'].includes(user?.role || '') && (
               <TabsTrigger value="appraisal" className="bg-green-50 border-green-200">
                 Tasación
               </TabsTrigger>
@@ -900,8 +901,8 @@ export function LeadDetailDialog({ open, onOpenChange, lead, onSuccess }: LeadDe
             </TabsContent>
           )}
 
-          {/* Appraisal Tab - Only visible when appraisal is paid */}
-          {lead.closerFollowUp?.paidAppraisal && user && (
+          {lead.closerFollowUp?.paidAppraisal && user && 
+           ['appraisal_manager', 'supervisor', 'administrator', 'investment_executive'].includes(user.role || '') && (
             <TabsContent value="appraisal" className="space-y-4">
               <AppraisalForm
                 lead={lead}

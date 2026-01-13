@@ -155,6 +155,23 @@ export const leadsService = {
         return closerLeads
     },
 
+    async getLeadsReviewedByUser(userId: string, role: 'legal' | 'commercial'): Promise<Lead[]> {
+        const field = role === 'legal' ? 'legalReviewedBy' : 'commercialReviewedBy'
+        
+        console.log(`🔍 Getting leads reviewed by ${role}: ${userId}`)
+
+        const q = query(
+            collection(db, "leads"),
+            where(field, "==", userId)
+        )
+        
+        const snapshot = await getDocs(q)
+        const leads = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lead))
+        
+        console.log(`📋 Found ${leads.length} leads reviewed by user`)
+        return leads
+    },
+
     async getLeadsForAppraisalManager(): Promise<Lead[]> {
 
         console.log(`🔍 Getting leads for appraisal manager`)
@@ -572,6 +589,99 @@ export const leadsService = {
             throw error
         }
     },
+    async getGlobalStats(): Promise<{
+        totalLeads: number
+        byStatus: Record<string, number>
+        bySubstatus: Record<string, number>
+        byType: { loan: number; investment: number }
+        legalStats: { pending: number; approved: number; rejected: number }
+        commercialStats: { pending: number; approved: number; rejected: number }
+        byExecutive: Record<string, number>
+    }> {
+        try {
+            const allLeads = await this.getAllLeads()
+            
+            const stats = {
+                totalLeads: allLeads.length,
+                byStatus: {} as Record<string, number>,
+                bySubstatus: {} as Record<string, number>,
+                byType: { loan: 0, investment: 0 },
+                legalStats: { pending: 0, approved: 0, rejected: 0 },
+                commercialStats: { pending: 0, approved: 0, rejected: 0 },
+                byExecutive: {} as Record<string, number>
+            }
+
+            allLeads.forEach(lead => {
+                // By Status
+                const status = lead.status || 'unknown'
+                stats.byStatus[status] = (stats.byStatus[status] || 0) + 1
+
+                // By Substatus (only for relevant statuses)
+                if (lead.substatus) {
+                    const subKey = `${status}__${lead.substatus}`
+                    stats.bySubstatus[subKey] = (stats.bySubstatus[subKey] || 0) + 1
+                }
+
+                // By Type
+                if (lead.leadType === 'loan') stats.byType.loan++
+                else if (lead.leadType === 'investment') stats.byType.investment++
+
+                // Legal Stats
+                if (lead.legalStatus === 'pending_review') stats.legalStats.pending++
+                else if (lead.legalStatus === 'approved') stats.legalStats.approved++
+                else if (lead.legalStatus === 'rejected') stats.legalStats.rejected++
+
+                // Commercial Stats
+                if (lead.commercialStatus === 'pending_review') stats.commercialStats.pending++
+                else if (lead.commercialStatus === 'approved') stats.commercialStats.approved++
+                else if (lead.commercialStatus === 'rejected') stats.commercialStats.rejected++
+
+                // By Executive
+                if (lead.assignedTo) {
+                    stats.byExecutive[lead.assignedTo] = (stats.byExecutive[lead.assignedTo] || 0) + 1
+                }
+            })
+
+            return stats
+        } catch (error) {
+            console.error('Error calculating global stats:', error)
+            throw error
+        }
+    },
+
+    async getExecutiveStats(userId: string): Promise<{
+        total: number
+        newLeads: number
+        appointments: number
+        pendingLegal: number
+        pendingCommercial: number
+    }> {
+        try {
+            const myLeads = await this.getLeadsByExecutive(userId)
+            
+            const stats = {
+                total: myLeads.length,
+                newLeads: 0,
+                appointments: 0,
+                pendingLegal: 0,
+                pendingCommercial: 0
+            }
+
+            myLeads.forEach(lead => {
+                if (lead.status === 'nuevo') stats.newLeads++
+                if (lead.substatus === 'cita') stats.appointments++
+                
+                if (lead.legalStatus === 'pending_review') stats.pendingLegal++
+                if (lead.commercialStatus === 'pending_review') stats.pendingCommercial++
+            })
+
+            return stats
+        } catch (error) {
+            console.error('Error calculating executive stats:', error)
+            throw error
+        }
+    },
+
     async deleteAllLeads(): Promise<void> {
 
         try {
