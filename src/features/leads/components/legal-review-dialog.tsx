@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, X, FileText, ExternalLink } from "lucide-react";
+import { Check, X, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,

@@ -1,67 +1,68 @@
-import { useState, useEffect } from "react"
-import { useAuth } from "@/shared/context/auth-context"
-import { leadsService } from "@/features/leads/services/leads.service"
-import { LeadsTable } from "@/features/leads/components/leads-table"
-import { LeadDetailDialog } from "@/features/leads/components/lead-detail-dialog"
-import type { Lead } from "@/features/leads/types/leads.types"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useAuth } from "@/shared/context/auth-context";
+import { leadsService } from "@/features/leads/services/leads.service";
+import { LeadsTable } from "@/features/leads/components/leads-table";
+import { LeadDetailDialog } from "@/features/leads/components/lead-detail-dialog";
+import type { Lead } from "@/features/leads/types/leads.types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Calendar } from "lucide-react";
 
 export function CloserDashboard() {
-  const { user } = useAuth()
-  const [leads, setLeads] = useState<Lead[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const { user } = useAuth();
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
-      loadCloserLeads()
+      loadCloserLeads();
     }
-  }, [user])
+  }, [user]);
 
   const loadCloserLeads = async () => {
-    if (!user) return
-    
+    if (!user) return;
+
     try {
-      setLoading(true)
-      console.log('📥 CloserDashboard: Loading leads for closer:', user.uid)
-      const closerLeads = await leadsService.getLeadsByCloser(user.uid)
-      console.log('📥 CloserDashboard: Received leads:', closerLeads.length)
-      setLeads(closerLeads)
-      
+      setLoading(true);
+      console.log("📥 CloserDashboard: Loading leads for closer:", user.uid);
+      const closerLeads = await leadsService.getLeadsByCloser(user.uid);
+      console.log("📥 CloserDashboard: Received leads:", closerLeads.length);
+      setLeads(closerLeads);
+
       // Refresh selectedLead reference if dialog is open
-      setSelectedLead(current => {
-        if (!current) return null
-        return closerLeads.find(l => l.id === current.id) || current
-      })
+      setSelectedLead((current) => {
+        if (!current) return null;
+        return closerLeads.find((l) => l.id === current.id) || current;
+      });
     } catch (error) {
-      console.error('Error loading closer leads:', error)
+      console.error("Error loading closer leads:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLeadClick = (lead: Lead) => {
-    setSelectedLead(lead)
-    setDialogOpen(true)
-  }
-
-  const handleDialogClose = () => {
-    setDialogOpen(false)
-    setSelectedLead(null)
-  }
+    setSelectedLead(lead);
+    setDialogOpen(true);
+  };
 
   const handleSuccess = () => {
-    loadCloserLeads()
-  }
+    loadCloserLeads();
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Loading appointments...</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -99,11 +100,13 @@ export function CloserDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {leads.filter(lead => {
-                if (!lead.appointment?.date) return false
-                const today = new Date().toISOString().split('T')[0]
-                return lead.appointment.date === today
-              }).length}
+              {
+                leads.filter((lead) => {
+                  if (!lead.appointment?.date) return false;
+                  const today = new Date().toISOString().split("T")[0];
+                  return lead.appointment.date === today;
+                }).length
+              }
             </div>
             <p className="text-xs text-muted-foreground">
               Appointments scheduled for today
@@ -113,24 +116,22 @@ export function CloserDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Upcoming
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Upcoming</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {leads.filter(lead => {
-                if (!lead.appointment?.date) return false
-                const appointmentDate = new Date(lead.appointment.date)
-                const today = new Date()
-                today.setHours(0, 0, 0, 0)
-                return appointmentDate > today
-              }).length}
+              {
+                leads.filter((lead) => {
+                  if (!lead.appointment?.date) return false;
+                  const appointmentDate = new Date(lead.appointment.date);
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  return appointmentDate > today;
+                }).length
+              }
             </div>
-            <p className="text-xs text-muted-foreground">
-              Future appointments
-            </p>
+            <p className="text-xs text-muted-foreground">Future appointments</p>
           </CardContent>
         </Card>
       </div>
@@ -156,5 +157,5 @@ export function CloserDashboard() {
         onSuccess={handleSuccess}
       />
     </div>
-  )
+  );
 }

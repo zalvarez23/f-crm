@@ -1,62 +1,73 @@
-import { useState, useEffect } from "react"
-import { useAuth } from "@/shared/context/auth-context"
-import { leadsService } from "@/features/leads/services/leads.service"
-import { LeadsTable } from "@/features/leads/components/leads-table"
-import { LeadDetailDialog } from "@/features/leads/components/lead-detail-dialog"
-import type { Lead } from "@/features/leads/types/leads.types"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle2, DollarSign, Calendar } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useAuth } from "@/shared/context/auth-context";
+import { leadsService } from "@/features/leads/services/leads.service";
+import { LeadsTable } from "@/features/leads/components/leads-table";
+import { LeadDetailDialog } from "@/features/leads/components/lead-detail-dialog";
+import type { Lead } from "@/features/leads/types/leads.types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { CheckCircle2, DollarSign } from "lucide-react";
 
 export function AppraisalDashboard() {
-  const { user } = useAuth()
-  const [leads, setLeads] = useState<Lead[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
+  const { user } = useAuth();
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
-      loadAppraisalLeads()
+      loadAppraisalLeads();
     }
-  }, [user])
+  }, [user]);
 
   const loadAppraisalLeads = async () => {
-    if (!user) return
-    
+    if (!user) return;
+
     try {
-      setLoading(true)
-      console.log('📥 AppraisalDashboard: Loading leads...')
-      const appraisalLeads = await leadsService.getLeadsForAppraisalManager()
-      console.log('📥 AppraisalDashboard: Received leads:', appraisalLeads.length)
-      setLeads(appraisalLeads)
+      setLoading(true);
+      console.log("📥 AppraisalDashboard: Loading leads...");
+      const appraisalLeads = await leadsService.getLeadsForAppraisalManager();
+      console.log(
+        "📥 AppraisalDashboard: Received leads:",
+        appraisalLeads.length
+      );
+      setLeads(appraisalLeads);
     } catch (error) {
-      console.error('Error loading appraisal leads:', error)
+      console.error("Error loading appraisal leads:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleLeadClick = (lead: Lead) => {
-    setSelectedLead(lead)
-    setDialogOpen(true)
-  }
+    setSelectedLead(lead);
+    setDialogOpen(true);
+  };
 
   const handleSuccess = () => {
-    loadAppraisalLeads()
-  }
+    loadAppraisalLeads();
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-muted-foreground">Loading leads...</p>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Gestión de Tasaciones</h2>
+        <h2 className="text-3xl font-bold tracking-tight">
+          Gestión de Tasaciones
+        </h2>
         <p className="text-muted-foreground">
           Leads con pago de tasación confirmado
         </p>
@@ -81,27 +92,25 @@ export function AppraisalDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Pagos de Hoy
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">Pagos de Hoy</CardTitle>
             <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {leads.filter(lead => {
-                if (!lead.closerFollowUp?.paymentDate) return false
-                // Handle Firestore timestamp or Date object
-                const paymentDate = lead.closerFollowUp.paymentDate.toDate 
-                  ? lead.closerFollowUp.paymentDate.toDate() 
-                  : new Date(lead.closerFollowUp.paymentDate)
-                
-                const today = new Date()
-                return paymentDate.toDateString() === today.toDateString()
-              }).length}
+              {
+                leads.filter((lead) => {
+                  if (!lead.closerFollowUp?.paymentDate) return false;
+                  // Handle Firestore timestamp or Date object
+                  const paymentDate = lead.closerFollowUp.paymentDate.toDate
+                    ? lead.closerFollowUp.paymentDate.toDate()
+                    : new Date(lead.closerFollowUp.paymentDate);
+
+                  const today = new Date();
+                  return paymentDate.toDateString() === today.toDateString();
+                }).length
+              }
             </div>
-            <p className="text-xs text-muted-foreground">
-              Confirmados hoy
-            </p>
+            <p className="text-xs text-muted-foreground">Confirmados hoy</p>
           </CardContent>
         </Card>
 
@@ -114,7 +123,14 @@ export function AppraisalDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              S/ {leads.reduce((acc, lead) => acc + (Number(lead.appointment?.appraisalCost) || 0), 0).toFixed(2)}
+              S/{" "}
+              {leads
+                .reduce(
+                  (acc, lead) =>
+                    acc + (Number(lead.appointment?.appraisalCost) || 0),
+                  0
+                )
+                .toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
               Total recaudado en tasaciones
@@ -144,5 +160,5 @@ export function AppraisalDashboard() {
         onSuccess={handleSuccess}
       />
     </div>
-  )
+  );
 }
