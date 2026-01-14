@@ -66,9 +66,9 @@ export function LoginForm() {
               <FormLabel className="text-gray-700 font-semibold">Email</FormLabel>
               <FormControl>
                 <Input 
-                  placeholder="ejecutivo@intercapital.com" 
+                  placeholder="correo@intercapitalperu.com" 
                   {...field} 
-                  className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all h-11"
+                  className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all h-11 text-gray-900 placeholder:text-gray-400"
                 />
               </FormControl>
               <FormMessage />
@@ -85,7 +85,7 @@ export function LoginForm() {
                 <Input 
                   type="password" 
                   {...field} 
-                  className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all h-11"
+                  className="bg-gray-50/50 border-gray-200 focus:bg-white transition-all h-11 text-gray-900 placeholder:text-gray-400"
                 />
               </FormControl>
               <FormMessage />
