@@ -56,7 +56,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             
             if (!snapshot.empty) {
                 const userDoc = snapshot.docs[0]
-                const userData = { uid: userDoc.id, ...userDoc.data() } as UserProfile
+                const userDocRef = doc(db, "users", userDoc.id)
+                const now = new Date()
+                
+                // Reset status to available and update timestamp on login
+                await updateDoc(userDocRef, {
+                    status: 'available',
+                    statusUpdatedAt: serverTimestamp()
+                })
+
+                const userData = { 
+                    uid: userDoc.id, 
+                    ...userDoc.data(),
+                    status: 'available',
+                    statusUpdatedAt: now
+                } as UserProfile
+                
                 setUser(userData)
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
                 return
@@ -82,7 +97,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Optimistic UI update
         setUser(prev => {
             if (!prev) return null
-            const updated = { ...prev, status }
+            const updated = { 
+                ...prev, 
+                status,
+                statusUpdatedAt: new Date() // Reset timer locally immediately
+            }
             localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
             return updated
         })
