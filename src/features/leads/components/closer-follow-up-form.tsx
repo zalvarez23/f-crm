@@ -49,6 +49,19 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
   const [lostReason, setLostReason] = useState<string>(
     lead.closerFollowUp?.lostReason || ''
   )
+  // Investment qualification fields
+  const [investmentAgreement, setInvestmentAgreement] = useState<boolean | undefined>(
+    lead.investmentAgreement
+  )
+  const [committedAmount, setCommittedAmount] = useState<string>(
+    lead.committedAmount?.toString() || ''
+  )
+  const [agreedRate, setAgreedRate] = useState<string>(
+    lead.agreedRate?.toString() || ''
+  )
+  const [paymentDate, setPaymentDate] = useState<string>(
+    lead.paymentDate || ''
+  )
   const [isLoading, setIsLoading] = useState(false)
   
   // Synchronize state with prop changes (for reactivity when dashboard refreshes)
@@ -62,6 +75,10 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
     setPaidAppraisal(lead.closerFollowUp?.paidAppraisal)
     setPaymentCommitmentDate(lead.closerFollowUp?.paymentCommitmentDate || '')
     setLostReason(lead.closerFollowUp?.lostReason || '')
+    setInvestmentAgreement(lead.investmentAgreement)
+    setCommittedAmount(lead.committedAmount?.toString() || '')
+    setAgreedRate(lead.agreedRate?.toString() || '')
+    setPaymentDate(lead.paymentDate || '')
   }, [lead])
 
   const hasRecordedAttendance = clientAttended !== null
@@ -155,6 +172,54 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
   }
 
   const handleSaveClientInfo = async () => {
+    if (lead.leadType === 'investment') {
+      if (investmentAgreement === undefined) {
+        toast.error('Por favor indique si hubo acuerdo de inversión')
+        return
+      }
+      if (investmentAgreement) {
+        if (!committedAmount || Number(committedAmount) <= 0) {
+          toast.error('Por favor ingrese el monto a invertir')
+          return
+        }
+        if (!agreedRate || Number(agreedRate) <= 0) {
+          toast.error('Por favor ingrese la tasa de interés')
+          return
+        }
+        if (!paymentDate) {
+          toast.error('Por favor ingrese la fecha proyectada de pagos')
+          return
+        }
+      }
+
+      setIsLoading(true)
+      try {
+        await leadsService.updateLead(lead.id!, {
+          closerFollowUp: {
+            ...lead.closerFollowUp,
+            clientAttended: true,
+            attendanceRecordedAt: lead.closerFollowUp?.attendanceRecordedAt || (serverTimestamp() as any),
+            attendanceRecordedBy: lead.closerFollowUp?.attendanceRecordedBy || currentUserId,
+          },
+          investmentAgreement,
+          committedAmount: investmentAgreement ? Number(committedAmount) : undefined,
+          agreedRate: investmentAgreement ? Number(agreedRate) : undefined,
+          paymentDate: investmentAgreement ? paymentDate : undefined,
+          status: investmentAgreement ? 'calificado' : 'rechazado',
+          substatus: investmentAgreement ? 'seguimiento' : 'no_interesado'
+        })
+        toast.success('Información de inversión guardada exitosamente')
+        onSuccess()
+      } catch (error) {
+        console.error('Error saving investment info:', error)
+        toast.error('Error al guardar información de inversión')
+      } finally {
+        setIsLoading(false)
+      }
+      return
+    }
+
+    // Original Loan flow
     if (acceptsTerms === undefined) {
       toast.error('Por favor indique si el cliente acepta los términos')
       return
@@ -304,273 +369,347 @@ export function CloserFollowUpForm({ lead, currentUserId, onSuccess }: CloserFol
       <CardHeader>
         <CardTitle className="text-green-600">Cliente Asistió ✓</CardTitle>
         <CardDescription>
-          Complete la información del cliente después de la cita
+          {lead.leadType === 'investment' 
+            ? 'Registre el acuerdo de inversión y condiciones acordadas'
+            : 'Complete la información del cliente después de la cita'}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Accepts Terms */}
-        <div className="space-y-3">
-          <Label>¿Cliente acepta 10% + gastos nominales y registrales?</Label>
-          <RadioGroup
-            value={acceptsTerms?.toString()}
-            onValueChange={(value) => setAcceptsTerms(value === 'true')}
-            disabled={lead.closerFollowUp?.acceptsTerms !== undefined}
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="true" id="accepts-yes" />
-              <Label htmlFor="accepts-yes" className="cursor-pointer">Sí</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="false" id="accepts-no" />
-              <Label htmlFor="accepts-no" className="cursor-pointer">No</Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {/* Client Income */}
-        <div className="space-y-2">
-          <Label htmlFor="clientIncome">Ingresos del Cliente (S/)</Label>
-          <Input
-            id="clientIncome"
-            type="number"
-            placeholder="0.00"
-            step="0.01"
-            value={clientIncome}
-            onChange={(e) => setClientIncome(e.target.value)}
-            disabled={lead.closerFollowUp?.clientIncome !== undefined}
-          />
-        </div>
-
-        {/* Loan Reason */}
-        <div className="space-y-2">
-          <Label htmlFor="loanReason">Motivo de Préstamo</Label>
-          <Textarea
-            id="loanReason"
-            placeholder="Describa el motivo del préstamo..."
-            value={loanReason}
-            onChange={(e) => setLoanReason(e.target.value)}
-            disabled={lead.closerFollowUp?.loanReason !== undefined}
-            className="min-h-[100px]"
-          />
-        </div>
-
-        {/* Agreed Quota */}
-        <div className="space-y-2">
-          <Label htmlFor="agreedQuota">Acuerdo de Cuota (S/)</Label>
-          <Input
-            id="agreedQuota"
-            type="number"
-            placeholder="0.00"
-            step="0.01"
-            value={agreedQuota}
-            onChange={(e) => setAgreedQuota(e.target.value)}
-            disabled={lead.closerFollowUp?.agreedQuota !== undefined}
-          />
-        </div>
-
-        {/* Payment Plan */}
-        <div className="space-y-2">
-          <Label htmlFor="paymentPlan">Modalidad y Plan de Pago</Label>
-          <Textarea
-            id="paymentPlan"
-            placeholder="Describa la modalidad y plan de pago..."
-            value={paymentPlan}
-            onChange={(e) => setPaymentPlan(e.target.value)}
-            disabled={lead.closerFollowUp?.paymentPlan !== undefined}
-            className="min-h-[80px]"
-          />
-        </div>
-
-        {/* Paid Appraisal */}
-        <div className="space-y-3">
-          <Label>¿Realizó pago de tasación?</Label>
-          <RadioGroup
-            value={paidAppraisal?.toString()}
-            onValueChange={(value) => setPaidAppraisal(value === 'true')}
-            disabled={lead.closerFollowUp?.paidAppraisal !== undefined}
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="true" id="paid-yes" />
-              <Label htmlFor="paid-yes" className="cursor-pointer">Sí</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="false" id="paid-no" />
-              <Label htmlFor="paid-no" className="cursor-pointer">No</Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {/* Payment Commitment - Only show if appraisal NOT paid */}
-        {paidAppraisal === false && (
-          <Card className="border-l-4 border-l-orange-500 border-y border-r border-gray-200 bg-white shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-orange-800 text-base flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-orange-600" />
-                Pago de Tasación Pendiente
-              </CardTitle>
-              <CardDescription className="text-gray-600">
-                El cliente no ha realizado el pago. Es necesario registrar un compromiso o marcar la pérdida.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5 pt-0">
-              {/* Show Commitment Option if not lost */}
-              {!lead.closerFollowUp?.lostDueToNonPayment && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="commitmentDate" className="text-gray-700 font-medium">
-                      Opción A: Registrar Compromiso de Pago
-                    </Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="commitmentDate"
-                        type="date"
-                        className="flex-1 text-gray-900"
-                        value={paymentCommitmentDate}
-                        onChange={(e) => setPaymentCommitmentDate(e.target.value)}
-                        disabled={!!lead.closerFollowUp?.paymentCommitmentDate}
-                      />
-                    </div>
-                    {!lead.closerFollowUp?.paymentCommitmentDate && (
-                      <p className="text-xs text-gray-500">
-                        Seleccione la fecha en la que el cliente se compromete a pagar.
-                      </p>
-                    )}
-                    {lead.closerFollowUp?.paymentCommitmentDate && (
-                      <div className="mt-3">
-                        <Button 
-                          className="w-full bg-green-600 hover:bg-green-700 text-white shadow-sm"
-                          onClick={async () => {
-                            if (!confirm('¿Confirmar que el cliente ha realizado el pago de tasación?')) return
-                            
-                            setIsLoading(true)
-                            try {
-                              await leadsService.updateLead(lead.id!, {
-                                closerFollowUp: {
-                                  ...(lead.closerFollowUp || {}),
-                                  paidAppraisal: true,
-                                  paymentDate: serverTimestamp() as any
-                                } as any
-                              })
-                              setPaidAppraisal(true)
-                              toast.success('Pago confirmado exitosamente')
-                              onSuccess()
-                            } catch (error) {
-                              console.error('Error confirming payment:', error)
-                              toast.error('Error al confirmar pago')
-                            } finally {
-                              setIsLoading(false)
-                            }
-                          }}
-                          disabled={isLoading}
-                        >
-                          <CheckCircle2 className="mr-2 h-4 w-4" />
-                          Confirmar Pago Realizado
-                        </Button>
-                        <p className="text-xs text-gray-500 mt-2 text-center">
-                          Haga clic aquí si el cliente ya cumplió con el compromiso de pago.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-
-              {/* Show Lost Option only if no commitment saved */}
-              {!lead.closerFollowUp?.paymentCommitmentDate && !lead.closerFollowUp?.lostDueToNonPayment && (
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-gray-200" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-white px-2 text-gray-500 font-medium">O si no hay acuerdo</span>
-                  </div>
+        {lead.leadType === 'investment' ? (
+          <>
+            {/* Investment Agreement */}
+            <div className="space-y-3">
+              <Label>¿Hubo acuerdo de inversión?</Label>
+              <RadioGroup
+                value={investmentAgreement?.toString()}
+                onValueChange={(value) => setInvestmentAgreement(value === 'true')}
+                disabled={lead.investmentAgreement !== undefined}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="true" id="agreement-yes" />
+                  <Label htmlFor="agreement-yes" className="cursor-pointer">Sí, está de acuerdo e invertirá</Label>
                 </div>
-              )}
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="false" id="agreement-no" />
+                  <Label htmlFor="agreement-no" className="cursor-pointer">No, por ahora no invertirá</Label>
+                </div>
+              </RadioGroup>
+            </div>
 
-              {!lead.closerFollowUp?.paymentCommitmentDate && (
-                <>
-                  <div className="space-y-4">
-                    <Label className="text-gray-700 font-medium">
-                      Motivo de Pérdida (Requerido)
-                    </Label>
-                    <Textarea
-                      placeholder="Explique por qué se perdió este lead por falta de pago..."
-                      value={lostReason}
-                      onChange={(e) => setLostReason(e.target.value)}
-                      className="min-h-[80px]"
-                      disabled={isLoading || lead.closerFollowUp?.lostDueToNonPayment}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-gray-700 font-medium">
-                      Opción B: Marcar como Perdido
-                    </Label>
-                    {lead.closerFollowUp?.lostDueToNonPayment ? (
-                      <Alert variant="destructive">
-                        <XCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          Lead marcado como perdido por no pago
-                        </AlertDescription>
-                      </Alert>
-                    ) : (
-                      <Button
-                        variant="destructive"
-                        className="w-full bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 shadow-sm"
-                        onClick={async () => {
-                          if (!lostReason.trim()) {
-                            toast.error('Por favor ingrese el motivo de la pérdida')
-                            return
-                          }
-                          if (!confirm('¿Está seguro de marcar este lead como perdido por falta de pago? Esta acción rechazará el lead.')) return
-                          setIsLoading(true)
-                          try {
-                            await leadsService.updateLead(lead.id!, {
-                              closerFollowUp: {
-                                ...(lead.closerFollowUp || {}),
-                                clientAttended: true,
-                                lostDueToNonPayment: true,
-                                lostReason: lostReason.trim()
-                              } as any,
-                              status: 'rechazado'
-                            })
-                            toast.success('Lead marcado como perdido por no pago')
-                            onSuccess()
-                          } catch (error) {
-                            console.error('Error marking as lost due to non-payment:', error)
-                            toast.error('Error al marcar como perdido')
-                          } finally {
-                            setIsLoading(false)
-                          }
-                        }}
-                      >
-                        <XCircle className="mr-2 h-4 w-4" />
-                        Marcar como Perdido por No Pago
-                      </Button>
-                    )}
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+            {investmentAgreement && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                <div className="space-y-2">
+                  <Label htmlFor="committedAmount">Monto a Invertir (S/)</Label>
+                  <Input
+                    id="committedAmount"
+                    type="number"
+                    placeholder="0.00"
+                    step="0.01"
+                    value={committedAmount}
+                    onChange={(e) => setCommittedAmount(e.target.value)}
+                    disabled={lead.committedAmount !== undefined}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="agreedRate">Tasa de Interés Acordada (%)</Label>
+                  <Input
+                    id="agreedRate"
+                    type="number"
+                    placeholder="0.00"
+                    step="0.01"
+                    value={agreedRate}
+                    onChange={(e) => setAgreedRate(e.target.value)}
+                    disabled={lead.agreedRate !== undefined}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="paymentDate">Fecha Proyectada de Pagos</Label>
+                  <Input
+                    id="paymentDate"
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    disabled={lead.paymentDate !== undefined}
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Accepts Terms */}
+            <div className="space-y-3">
+              <Label>¿Cliente acepta 10% + gastos nominales y registrales?</Label>
+              <RadioGroup
+                value={acceptsTerms?.toString()}
+                onValueChange={(value) => setAcceptsTerms(value === 'true')}
+                disabled={lead.closerFollowUp?.acceptsTerms !== undefined}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="true" id="accepts-yes" />
+                  <Label htmlFor="accepts-yes" className="cursor-pointer">Sí</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="false" id="accepts-no" />
+                  <Label htmlFor="accepts-no" className="cursor-pointer">No</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Client Income */}
+            <div className="space-y-2">
+              <Label htmlFor="clientIncome">Ingresos del Cliente (S/)</Label>
+              <Input
+                id="clientIncome"
+                type="number"
+                placeholder="0.00"
+                step="0.01"
+                value={clientIncome}
+                onChange={(e) => setClientIncome(e.target.value)}
+                disabled={lead.closerFollowUp?.clientIncome !== undefined}
+              />
+            </div>
+
+            {/* Loan Reason */}
+            <div className="space-y-2">
+              <Label htmlFor="loanReason">Motivo de Préstamo</Label>
+              <Textarea
+                id="loanReason"
+                placeholder="Describa el motivo del préstamo..."
+                value={loanReason}
+                onChange={(e) => setLoanReason(e.target.value)}
+                disabled={lead.closerFollowUp?.loanReason !== undefined}
+                className="min-h-[100px]"
+              />
+            </div>
+
+            {/* Agreed Quota */}
+            <div className="space-y-2">
+              <Label htmlFor="agreedQuota">Acuerdo de Cuota (S/)</Label>
+              <Input
+                id="agreedQuota"
+                type="number"
+                placeholder="0.00"
+                step="0.01"
+                value={agreedQuota}
+                onChange={(e) => setAgreedQuota(e.target.value)}
+                disabled={lead.closerFollowUp?.agreedQuota !== undefined}
+              />
+            </div>
+
+            {/* Payment Plan */}
+            <div className="space-y-2">
+              <Label htmlFor="paymentPlan">Modalidad y Plan de Pago</Label>
+              <Textarea
+                id="paymentPlan"
+                placeholder="Describa la modalidad y plan de pago..."
+                value={paymentPlan}
+                onChange={(e) => setPaymentPlan(e.target.value)}
+                disabled={lead.closerFollowUp?.paymentPlan !== undefined}
+                className="min-h-[80px]"
+              />
+            </div>
+
+            {/* Paid Appraisal */}
+            <div className="space-y-3">
+              <Label>¿Realizó pago de tasación?</Label>
+              <RadioGroup
+                value={paidAppraisal?.toString()}
+                onValueChange={(value) => setPaidAppraisal(value === 'true')}
+                disabled={lead.closerFollowUp?.paidAppraisal !== undefined}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="true" id="paid-yes" />
+                  <Label htmlFor="paid-yes" className="cursor-pointer">Sí</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="false" id="paid-no" />
+                  <Label htmlFor="paid-no" className="cursor-pointer">No</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Payment Commitment - Only show if appraisal NOT paid */}
+            {paidAppraisal === false && (
+              <Card className="border-l-4 border-l-orange-500 border-y border-r border-gray-200 bg-white shadow-sm">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-orange-800 text-base flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-orange-600" />
+                    Pago de Tasación Pendiente
+                  </CardTitle>
+                  <CardDescription className="text-gray-600">
+                    El cliente no ha realizado el pago. Es necesario registrar un compromiso o marcar la pérdida.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-5 pt-0">
+                  {/* Show Commitment Option if not lost */}
+                  {!lead.closerFollowUp?.lostDueToNonPayment && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="commitmentDate" className="text-gray-700 font-medium">
+                          Opción A: Registrar Compromiso de Pago
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input
+                            id="commitmentDate"
+                            type="date"
+                            className="flex-1 text-gray-900"
+                            value={paymentCommitmentDate}
+                            onChange={(e) => setPaymentCommitmentDate(e.target.value)}
+                            disabled={!!lead.closerFollowUp?.paymentCommitmentDate}
+                          />
+                        </div>
+                        {!lead.closerFollowUp?.paymentCommitmentDate && (
+                          <p className="text-xs text-gray-500">
+                            Seleccione la fecha en la que el cliente se compromete a pagar.
+                          </p>
+                        )}
+                        {lead.closerFollowUp?.paymentCommitmentDate && (
+                          <div className="mt-3">
+                            <Button 
+                              className="w-full bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                              onClick={async () => {
+                                if (!confirm('¿Confirmar que el cliente ha realizado el pago de tasación?')) return
+                                
+                                setIsLoading(true)
+                                try {
+                                  await leadsService.updateLead(lead.id!, {
+                                    closerFollowUp: {
+                                      ...(lead.closerFollowUp || {}),
+                                      paidAppraisal: true,
+                                      paymentDate: serverTimestamp() as any
+                                    } as any
+                                  })
+                                  setPaidAppraisal(true)
+                                  toast.success('Pago confirmado exitosamente')
+                                  onSuccess()
+                                } catch (error) {
+                                  console.error('Error confirming payment:', error)
+                                  toast.error('Error al confirmar pago')
+                                } finally {
+                                  setIsLoading(false)
+                                }
+                              }}
+                              disabled={isLoading}
+                            >
+                              <CheckCircle2 className="mr-2 h-4 w-4" />
+                              Confirmar Pago Realizado
+                            </Button>
+                            <p className="text-xs text-gray-500 mt-2 text-center">
+                              Haga clic aquí si el cliente ya cumplió con el compromiso de pago.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Show Lost Option only if no commitment saved */}
+                  {!lead.closerFollowUp?.paymentCommitmentDate && !lead.closerFollowUp?.lostDueToNonPayment && (
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t border-gray-200" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-white px-2 text-gray-500 font-medium">O si no hay acuerdo</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {!lead.closerFollowUp?.paymentCommitmentDate && (
+                    <>
+                      <div className="space-y-4">
+                        <Label className="text-gray-700 font-medium">
+                          Motivo de Pérdida (Requerido)
+                        </Label>
+                        <Textarea
+                          placeholder="Explique por qué se perdió este lead por falta de pago..."
+                          value={lostReason}
+                          onChange={(e) => setLostReason(e.target.value)}
+                          className="min-h-[80px]"
+                          disabled={isLoading || lead.closerFollowUp?.lostDueToNonPayment}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-gray-700 font-medium">
+                          Opción B: Marcar como Perdido
+                        </Label>
+                        {lead.closerFollowUp?.lostDueToNonPayment ? (
+                          <Alert variant="destructive">
+                            <XCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              Lead marcado como perdido por no pago
+                            </AlertDescription>
+                          </Alert>
+                        ) : (
+                          <Button
+                            variant="destructive"
+                            className="w-full bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 shadow-sm"
+                            onClick={async () => {
+                              if (!lostReason.trim()) {
+                                toast.error('Por favor ingrese el motivo de la pérdida')
+                                return
+                              }
+                              if (!confirm('¿Está seguro de marcar este lead como perdido por falta de pago? Esta acción rechazará el lead.')) return
+                              setIsLoading(true)
+                              try {
+                                await leadsService.updateLead(lead.id!, {
+                                  closerFollowUp: {
+                                    ...(lead.closerFollowUp || {}),
+                                    clientAttended: true,
+                                    lostDueToNonPayment: true,
+                                    lostReason: lostReason.trim()
+                                  } as any,
+                                  status: 'rechazado'
+                                })
+                                toast.success('Lead marcado como perdido por no pago')
+                                onSuccess()
+                              } catch (error) {
+                                console.error('Error marking as lost due to non-payment:', error)
+                                toast.error('Error al marcar como perdido')
+                              } finally {
+                                setIsLoading(false)
+                              }
+                            }}
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Marcar como Perdido por No Pago
+                          </Button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </>
         )}
 
         {/* Save Button */}
-        {lead.closerFollowUp?.acceptsTerms === undefined && (
+        {((lead.leadType === 'investment' && lead.investmentAgreement === undefined) || 
+          (lead.leadType !== 'investment' && lead.closerFollowUp?.acceptsTerms === undefined)) && (
           <Button
             onClick={handleSaveClientInfo}
             disabled={isLoading}
             className="w-full"
           >
             {isLoading && <span className="mr-2">⏳</span>}
-            Guardar Información del Cliente
+            {lead.leadType === 'investment' 
+              ? 'Guardar Información de Inversión' 
+              : 'Guardar Información del Cliente'}
           </Button>
         )}
 
-        {lead.closerFollowUp?.acceptsTerms !== undefined && (
-          <Alert>
+        {((lead.leadType === 'investment' && lead.investmentAgreement !== undefined) || 
+          (lead.leadType !== 'investment' && lead.closerFollowUp?.acceptsTerms !== undefined)) && (
+          <Alert className={lead.investmentAgreement === false ? "bg-red-50 text-red-700 border-red-100" : "bg-green-50 text-green-700 border-green-100"}>
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
-              Información del cliente guardada exitosamente
+              {lead.leadType === 'investment' && lead.investmentAgreement === false
+                ? 'El inversionista indicó que no invertirá por ahora.'
+                : 'Información guardada exitosamente'}
             </AlertDescription>
           </Alert>
         )}

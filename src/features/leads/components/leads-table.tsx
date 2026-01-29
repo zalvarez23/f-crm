@@ -61,6 +61,7 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
       contacto_no_efectivo: { label: "C. No Efectivo", className: "bg-yellow-500 text-white border-yellow-600" },
       no_contactado: { label: "No Contactado", className: "bg-red-500 text-white border-red-600" },
       rechazado: { label: "Rechazado", className: "bg-orange-500 text-white border-orange-600" },
+      calificado: { label: "Calificado", className: "bg-indigo-600 text-white border-indigo-700 font-bold" },
     }
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.nuevo
@@ -148,7 +149,7 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
                 )}
 
                 <TableCell>
-                  {lead.closerAssignedTo && lead.appointment && (
+                  {(lead.appointment && (lead.closerAssignedTo || lead.leadType === 'investment')) ? (
                     <div className="flex flex-col gap-1">
                       <Badge variant="outline" className="bg-blue-500 text-white border-blue-600">
                         <Calendar className="mr-1 h-3 w-3" />
@@ -197,8 +198,7 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
                         </Badge>
                       )}
                     </div>
-                  )}
-                  {!lead.closerAssignedTo && "-"}
+                  ) : "-"}
                 </TableCell>
               </TableRow>
             ))

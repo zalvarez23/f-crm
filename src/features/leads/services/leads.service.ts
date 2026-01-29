@@ -257,7 +257,8 @@ export const leadsService = {
       const q = query(
         collection(db, "leads"),
         where("identityDocument", "==", dni),
-        where("leadType", "==", "investment")
+        where("leadType", "==", "investment"),
+        where("investmentAgreement", "==", true)
       );
       const snapshot = await getDocs(q);
       if (snapshot.empty) return null;

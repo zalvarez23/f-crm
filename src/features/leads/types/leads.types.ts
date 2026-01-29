@@ -13,7 +13,8 @@ export interface Lead {
     | "contactado"
     | "contacto_no_efectivo"
     | "no_contactado"
-    | "rechazado";
+    | "rechazado"
+    | "calificado";
   substatus?:
     | "interesado"
     | "gestion_whatsapp"
@@ -188,6 +189,12 @@ export interface Lead {
       };
     }[];
   };
+
+  // Qualified Investor Workflow Fields
+  investmentAgreement?: boolean;
+  committedAmount?: number;
+  agreedRate?: number;
+  paymentDate?: any;
 }
 
 export interface LeadUploadRow {

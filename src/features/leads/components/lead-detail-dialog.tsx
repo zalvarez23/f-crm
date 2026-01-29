@@ -45,6 +45,7 @@ const formSchema = z.object({
     "contacto_no_efectivo",
     "no_contactado",
     "rechazado",
+    "calificado",
   ]),
   substatus: z
     .enum([
@@ -315,6 +316,21 @@ export function LeadDetailDialog({
 
     setIsLoading(true);
     try {
+      // Validate DNI if scheduling an appointment
+      const hasAppointmentData = values.appointment?.date && values.appointment?.time;
+      const isSchedulingNow = !!hasAppointmentData;
+      
+      if (isSchedulingNow) {
+        const dniInput = values.identityDocument;
+        const existingDni = lead.identityDocument;
+        
+        if (!dniInput && !existingDni) {
+          toast.error("El DNI es obligatorio para agendar una cita");
+          setIsLoading(false);
+          return;
+        }
+      }
+
       console.log("🚀 LeadDetailDialog: Submitting update...", {
         values,
         currentLead: {

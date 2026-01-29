@@ -198,18 +198,18 @@ export function AppraisalReportsView() {
                     {filteredLeads.map((lead) => (
                         <Card key={lead.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                             {/* Header */}
-                            <CardHeader className="bg-primary/5 border-b">
+                            <CardHeader className="border-b border-gray-100 dark:border-white/5">
                                 <div className="flex items-start justify-between">
                                     <div className="flex items-center gap-2">
                                         <FileText className="h-5 w-5 text-primary" />
                                         <CardTitle className="text-lg">{lead.name}</CardTitle>
                                     </div>
                                     {lead.appraisal?.investorName ? (
-                                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
+                                        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
                                             ASIGNADO
                                         </Badge>
                                     ) : (
-                                        <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                                        <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20">
                                             DISPONIBLE
                                         </Badge>
                                     )}
@@ -267,31 +267,31 @@ export function AppraisalReportsView() {
                                 )}
 
                                 {/* Appraisal Details */}
-                                <div>
-                                    <h4 className="text-sm font-semibold text-muted-foreground mb-2">DETALLES DE TASACIÓN</h4>
-                                    <div className="space-y-2">
+                                <div className="space-y-2 pt-2">
+                                    <h4 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Detalles de Tasación</h4>
+                                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-2 px-3 border border-gray-100 dark:border-white/5 rounded-lg text-sm bg-gray-50/50 dark:bg-white/[0.02]">
                                         {lead.appraisal?.price && (
-                                            <div className="flex justify-between items-center bg-primary/5 px-3 py-2 rounded">
-                                                <span className="text-sm font-medium">Precio Tasación:</span>
-                                                <span className="text-sm font-bold">S/ {lead.appraisal.price.toLocaleString()}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-muted-foreground">Precio</span>
+                                                <span className="font-semibold text-primary">S/ {lead.appraisal.price.toLocaleString()}</span>
                                             </div>
                                         )}
                                         {lead.appraisal?.garagePrice && (
-                                            <div className="flex justify-between items-center bg-primary/5 px-3 py-2 rounded">
-                                                <span className="text-sm font-medium">Tasación Cochera:</span>
-                                                <span className="text-sm font-bold">S/ {lead.appraisal.garagePrice.toLocaleString()}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-muted-foreground">Cochera</span>
+                                                <span className="font-semibold text-primary">S/ {lead.appraisal.garagePrice.toLocaleString()}</span>
                                             </div>
                                         )}
                                         {lead.appraisal?.area && (
-                                            <div className="flex justify-between items-center bg-primary/5 px-3 py-2 rounded">
-                                                <span className="text-sm font-medium">Área:</span>
-                                                <span className="text-sm font-bold">{lead.appraisal.area} m²</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-muted-foreground">Área</span>
+                                                <span className="font-medium">{lead.appraisal.area} m²</span>
                                             </div>
                                         )}
                                         {lead.appraisal?.usage && (
-                                            <div className="flex justify-between items-center bg-primary/5 px-3 py-2 rounded">
-                                                <span className="text-sm font-medium">Uso:</span>
-                                                <span className="text-sm font-bold">{lead.appraisal.usage}</span>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] text-muted-foreground">Uso</span>
+                                                <span className="font-medium truncate" title={lead.appraisal.usage}>{lead.appraisal.usage}</span>
                                             </div>
                                         )}
                                     </div>
@@ -317,44 +317,50 @@ export function AppraisalReportsView() {
                                 )}
 
                                 {/* Action Buttons */}
-                                <div className="space-y-2 pt-2">
-                                    {lead.appraisal?.reportUrl && (
+                                <div className="space-y-3 pt-4 border-t border-dashed border-gray-100 dark:border-white/10">
+                                    <div className="flex gap-2">
                                         <Button
-                                            variant="outline"
-                                            className="w-full"
-                                            onClick={() => handleDownloadPDF(lead.appraisal?.reportUrl)}
+                                            className="flex-1 bg-cyan-600 hover:bg-cyan-700 shadow-sm"
+                                            onClick={() => handleAssignInvestor(lead)}
                                         >
-                                            <Download className="mr-2 h-4 w-4" />
-                                            Descargar PDF
+                                            <UserPlus className="mr-2 h-4 w-4" />
+                                            {lead.appraisal?.investorName ? 'Reasignar' : 'Asignar Inversionista'}
                                         </Button>
-                                    )}
-                                    <Button
-                                        className="w-full bg-cyan-500 hover:bg-cyan-600"
-                                        onClick={() => handleAssignInvestor(lead)}
-                                    >
-                                        <UserPlus className="mr-2 h-4 w-4" />
-                                        {lead.appraisal?.investorName ? 'Reasignar Inversionista' : 'Asignar Inversionista'}
-                                    </Button>
+
+                                        {lead.appraisal?.reportUrl && (
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="border-gray-200 text-gray-600 hover:bg-gray-50 flex-shrink-0"
+                                                onClick={() => handleDownloadPDF(lead.appraisal?.reportUrl)}
+                                                title="Descargar PDF"
+                                            >
+                                                <Download className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                        
+                                        {lead.appraisal?.investorName && (
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="text-red-600 border-red-100 hover:bg-red-50 hover:text-red-700 hover:border-red-200 flex-shrink-0"
+                                                onClick={() => {
+                                                    setSelectedLead(lead)
+                                                    setIsReleaseDialogOpen(true)
+                                                }}
+                                                title="Liberar Inversionista"
+                                            >
+                                                <UserMinus className="h-4 w-4" />
+                                            </Button>
+                                        )}
+                                    </div>
                                     
-                                    {lead.appraisal?.investorName && (
-                                        <Button
-                                            variant="outline"
-                                            className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                                            onClick={() => {
-                                                setSelectedLead(lead)
-                                                setIsReleaseDialogOpen(true)
-                                            }}
-                                        >
-                                            <UserMinus className="mr-2 h-4 w-4" />
-                                            Liberar Inversionista
-                                        </Button>
-                                    )}
                                     <Button
-                                        variant="ghost"
-                                        className="w-full text-xs"
+                                        variant="link"
+                                        className="w-full text-[11px] h-auto p-0 text-muted-foreground hover:text-primary transition-colors"
                                         onClick={() => handleLeadClick(lead)}
                                     >
-                                        Ver detalles completos
+                                        Ver historial y detalles completos
                                     </Button>
                                 </div>
                             </CardContent>

@@ -6,6 +6,7 @@ import type { Lead } from "@/features/leads/types/leads.types"
 import { LeadsTable } from "@/features/leads/components/leads-table"
 import { LeadDetailDialog } from "@/features/leads/components/lead-detail-dialog"
 import { DashboardStats } from "./dashboard-stats"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export function ExecutiveDashboard() {
     const { user } = useAuth()
@@ -21,15 +22,19 @@ export function ExecutiveDashboard() {
     const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
     const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-    console.log('🎯 ExecutiveDashboard render - user:', user, 'leads count:', leads.length, 'loading:', loading)
+    // Filter leads by category
+    const categoryLeads = {
+        nuevos: leads.filter(l => l.status === 'nuevo' && !l.closerFollowUp?.markedAsLost),
+        activos: leads.filter(l => 
+            ['contactado', 'no_contactado', 'contacto_no_efectivo', 'calificado'].includes(l.status) && 
+            !l.closerFollowUp?.markedAsLost
+        ),
+        finalizados: leads.filter(l => l.status === 'rechazado' || l.closerFollowUp?.markedAsLost)
+    }
 
     useEffect(() => {
-        console.log('🔄 ExecutiveDashboard useEffect triggered, user:', user)
         if (user) {
-            console.log('✅ User exists, calling loadMyLeads()')
             loadMyLeads()
-        } else {
-            console.log('❌ No user, skipping loadMyLeads()')
         }
     }, [user])
 
@@ -37,7 +42,6 @@ export function ExecutiveDashboard() {
         if (!user) return
         
         try {
-            console.log('📥 ExecutiveDashboard: Loading leads for user:', user.uid)
             const [myLeads, myStats] = await Promise.all([
                 leadsService.getLeadsByExecutive(user.uid),
                 leadsService.getExecutiveStats(user.uid)
@@ -47,12 +51,10 @@ export function ExecutiveDashboard() {
             setLeads(filteredLeads)
             setStats(myStats)
             
-            // Refresh selectedLead reference if dialog is open
             setSelectedLead(current => {
                 if (!current) return null
                 return filteredLeads.find(l => l.id === current.id) || current
             })
-            console.log('📥 ExecutiveDashboard: State updated with leads')
         } catch (error) {
             console.error("Error loading leads:", error)
         } finally {
@@ -66,16 +68,18 @@ export function ExecutiveDashboard() {
     }
 
     const handleLeadUpdated = () => {
-        loadMyLeads() // Refresh leads after update
+        loadMyLeads() 
     }
 
     return (
         <div className="space-y-8">
-            <div>
-                <h2 className="text-3xl font-bold tracking-tight">Mis Leads</h2>
-                <p className="text-muted-foreground">
-                    Gestiona tus leads asignados de préstamos.
-                </p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Mis Leads</h2>
+                    <p className="text-muted-foreground">
+                        Gestiona tus leads asignados de préstamos.
+                    </p>
+                </div>
             </div>
 
             {/* Stats */}
@@ -83,44 +87,94 @@ export function ExecutiveDashboard() {
                 <DashboardStats
                     title="Nuevos"
                     value={loading ? "..." : stats.newLeads}
-                    description="Leads pendientes de primer contacto"
+                    description="Pendientes de primer contacto"
                     icon={PhoneCall}
                     iconColor="text-accent"
                 />
                 <DashboardStats
                     title="Citas"
                     value={loading ? "..." : stats.appointments}
-                    description="Leads con cita agendada"
+                    description="Con cita agendada"
                     icon={PhoneCall}
                     iconColor="text-green-500"
                 />
                 <DashboardStats
                     title="Pte. Legal"
                     value={loading ? "..." : stats.pendingLegal}
-                    description="A la espera de revisión legal"
+                    description="En revisión legal"
                     icon={PhoneCall}
                     iconColor="text-blue-600"
                 />
                 <DashboardStats
                     title="Pte. Comercial"
                     value={loading ? "..." : stats.pendingCommercial}
-                    description="A la espera de revisión comercial"
+                    description="En revisión comercial"
                     icon={PhoneCall}
                     iconColor="text-primary"
                 />
             </div>
 
-            {/* Leads Table */}
-            <div className="space-y-4">
-                <h3 className="text-xl font-semibold">Lista de Leads</h3>
-                {loading ? (
-                    <p>Cargando tus leads...</p>
-                ) : (
-                    <>
-                        {console.log('📤 ExecutiveDashboard: Passing leads to table:', leads)}
-                        <LeadsTable leads={leads} onLeadClick={handleLeadClick} />
-                    </>
-                )}
+            {/* Leads Table with Tabs */}
+            <div className="space-y-6">
+                <Tabs defaultValue="nuevos" className="w-full">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xl font-semibold">Lista de Gestión</h3>
+                        <TabsList className="bg-muted/50">
+                            <TabsTrigger value="nuevos" className="relative">
+                                Nuevos
+                                {categoryLeads.nuevos.length > 0 && (
+                                    <span className="ml-2 bg-accent text-white text-[10px] px-1.5 rounded-full">
+                                        {categoryLeads.nuevos.length}
+                                    </span>
+                                )}
+                            </TabsTrigger>
+                            <TabsTrigger value="activos">
+                                En Seguimiento
+                                {categoryLeads.activos.length > 0 && (
+                                    <span className="ml-2 bg-green-500 text-white text-[10px] px-1.5 rounded-full">
+                                        {categoryLeads.activos.length}
+                                    </span>
+                                )}
+                            </TabsTrigger>
+                            <TabsTrigger value="finalizados">
+                                Finalizados
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
+
+                    {loading ? (
+                        <div className="py-12 text-center text-muted-foreground">Cargando tus leads...</div>
+                    ) : (
+                        <>
+                            <TabsContent value="nuevos" className="mt-0">
+                                <LeadsTable leads={categoryLeads.nuevos} onLeadClick={handleLeadClick} />
+                                {categoryLeads.nuevos.length === 0 && (
+                                    <div className="py-12 text-center border rounded-md border-dashed text-muted-foreground">
+                                        No tienes leads nuevos asignados.
+                                    </div>
+                                )}
+                            </TabsContent>
+
+                            <TabsContent value="activos" className="mt-0">
+                                <LeadsTable leads={categoryLeads.activos} onLeadClick={handleLeadClick} />
+                                {categoryLeads.activos.length === 0 && (
+                                    <div className="py-12 text-center border rounded-md border-dashed text-muted-foreground">
+                                        No tienes leads en seguimiento activo.
+                                    </div>
+                                )}
+                            </TabsContent>
+
+                            <TabsContent value="finalizados" className="mt-0">
+                                <LeadsTable leads={categoryLeads.finalizados} onLeadClick={handleLeadClick} />
+                                {categoryLeads.finalizados.length === 0 && (
+                                    <div className="py-12 text-center border rounded-md border-dashed text-muted-foreground">
+                                        No hay leads finalizados (rechazados o perdidos).
+                                    </div>
+                                )}
+                            </TabsContent>
+                        </>
+                    )}
+                </Tabs>
             </div>
 
             <LeadDetailDialog
