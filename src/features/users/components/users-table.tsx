@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Pencil, Trash2 } from "lucide-react"
+import { Pencil, Trash2, Key } from "lucide-react"
 import type { UserProfile } from "@/shared/types/user.types"
 import {
   AlertDialog,
@@ -26,9 +26,10 @@ interface UsersTableProps {
   users: UserProfile[]
   onEdit: (user: UserProfile) => void
   onDelete?: (uid: string) => void
+  onResetPassword?: (user: UserProfile) => void
 }
 
-export function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
+export function UsersTable({ users, onEdit, onDelete, onResetPassword }: UsersTableProps) {
   const [userToDelete, setUserToDelete] = useState<string | null>(null)
 
   const handleDeleteClick = (uid: string) => {
@@ -66,6 +67,11 @@ export function UsersTable({ users, onEdit, onDelete }: UsersTableProps) {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
+                    {onResetPassword && (
+                      <Button variant="ghost" size="icon" onClick={() => onResetPassword(user)} title="Resetear Contraseña">
+                        <Key className="h-4 w-4 text-amber-500" />
+                      </Button>
+                    )}
                     <Button variant="ghost" size="icon" onClick={() => onEdit(user)}>
                       <Pencil className="h-4 w-4" />
                     </Button>

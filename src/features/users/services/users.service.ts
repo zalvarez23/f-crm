@@ -66,6 +66,16 @@ export const usersService = {
         }
     },
 
+    async updatePassword(uid: string, newPassword: string): Promise<void> {
+        try {
+            const docRef = doc(db, "users", uid)
+            await updateDoc(docRef, { password: newPassword })
+        } catch (error: any) {
+            console.warn("usersService: Failed to update password in Firestore", error)
+            throw error
+        }
+    },
+
     async delete(uid: string): Promise<void> {
 
         try {
@@ -133,12 +143,11 @@ export const usersService = {
                     
                     if (activityMap[userId]) {
                          const status = currentLog.status
-                         if (status === 'available') {
+                         if (status === 'available' || status === 'meeting') {
                              activityMap[userId].online += durationMinutes
                          } else if (['lunch', 'break', 'bathroom'].includes(status)) {
                              activityMap[userId].break += durationMinutes
                          }
-                         // 'meeting', 'end_shift' might be handled differently or ignored for "break" calculation
                     }
                 }
             })

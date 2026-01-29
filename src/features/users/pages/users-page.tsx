@@ -3,6 +3,8 @@ import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { UsersTable } from "../components/users-table"
 import { UserDialog } from "../components/user-dialog"
+import { RoleGuide } from "../components/role-guide"
+import { PasswordResetDialog } from "../components/password-reset-dialog"
 import { usersService } from "../services/users.service"
 import type { UserProfile } from "@/shared/types/user.types"
 import { toast } from "sonner"
@@ -11,7 +13,9 @@ export default function UsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserProfile | null>(null)
+  const [resetUser, setResetUser] = useState<UserProfile | null>(null)
 
   const loadUsers = async () => {
     setLoading(true)
@@ -40,6 +44,11 @@ export default function UsersPage() {
     setIsDialogOpen(true)
   }
 
+  const handleResetPassword = (user: UserProfile) => {
+    setResetUser(user)
+    setIsResetDialogOpen(true)
+  }
+
   const handleDeleteUser = async (uid: string) => {
     if (!confirm("¿Está seguro de eliminar este usuario?")) return
     try {
@@ -64,10 +73,17 @@ export default function UsersPage() {
         </Button>
       </div>
 
+      <RoleGuide />
+
       {loading ? (
         <div className="text-center py-10">Cargando usuarios...</div>
       ) : (
-        <UsersTable users={users} onEdit={handleEditUser} onDelete={handleDeleteUser} />
+        <UsersTable 
+          users={users} 
+          onEdit={handleEditUser} 
+          onDelete={handleDeleteUser} 
+          onResetPassword={handleResetPassword}
+        />
       )}
 
       <UserDialog 
@@ -78,6 +94,12 @@ export default function UsersPage() {
           loadUsers()
           setIsDialogOpen(false)
         }}
+      />
+
+      <PasswordResetDialog 
+        open={isResetDialogOpen}
+        onOpenChange={setIsResetDialogOpen}
+        user={resetUser}
       />
     </div>
   )

@@ -65,6 +65,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     statusUpdatedAt: serverTimestamp()
                 })
 
+                // Log status on login for time tracking
+                await addDoc(collection(db, "user_status_logs"), {
+                    userId: userDoc.id,
+                    status: 'available',
+                    timestamp: serverTimestamp()
+                })
+
                 const userData = { 
                     uid: userDoc.id, 
                     ...userDoc.data(),

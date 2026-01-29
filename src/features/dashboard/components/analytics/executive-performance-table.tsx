@@ -37,6 +37,15 @@ const statusColorMap: Record<string, string> = {
     end_shift: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
 }
 
+const statusLabels: Record<string, string> = {
+    available: "Disponible",
+    lunch: "Almuerzo",
+    break: "Pausa Activa",
+    bathroom: "Baño",
+    meeting: "Reunión",
+    end_shift: "Turno Finalizado"
+}
+
 export function ExecutivePerformanceTable({ data }: ExecutivePerformanceTableProps) {
     return (
         <Card className="col-span-2">
@@ -63,7 +72,7 @@ export function ExecutivePerformanceTable({ data }: ExecutivePerformanceTablePro
                                     <TableCell className="capitalize">{user.role?.replace('_', ' ') || 'N/A'}</TableCell>
                                     <TableCell>
                                         <Badge className={`border-none shadow-none ${statusColorMap[user.lastStatus] || 'bg-gray-100 text-gray-800'}`}>
-                                            {user.lastStatus}
+                                            {statusLabels[user.lastStatus] || user.lastStatus}
                                         </Badge>
                                     </TableCell>
                                     <TableCell className="text-right font-bold text-green-600">

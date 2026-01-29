@@ -83,6 +83,9 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
             <TableHead>Email</TableHead>
             <TableHead>Monto / Capital</TableHead>
             <TableHead>Estado</TableHead>
+            {leads.some(l => (l as any).assignedToName) && (
+              <TableHead>Ejecutivo</TableHead>
+            )}
             {!isInvestmentExecutive && (
               <>
                 <TableHead>Estado Legal</TableHead>
@@ -105,6 +108,13 @@ export function LeadsTable({ leads, onLeadClick }: LeadsTableProps) {
                 <TableCell>{lead.email || "-"}</TableCell>
                 <TableCell className="font-semibold">S/ {Number(lead.amount || 0).toLocaleString()}</TableCell>
                 <TableCell>{getStatusBadge(lead)}</TableCell>
+                {(lead as any).assignedToName && (
+                  <TableCell>
+                    <Badge variant="secondary" className="bg-slate-100 text-slate-700 font-normal">
+                      {(lead as any).assignedToName}
+                    </Badge>
+                  </TableCell>
+                )}
                 {!isInvestmentExecutive && (
                   <>
                     <TableCell>

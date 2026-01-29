@@ -14,13 +14,22 @@ import { PipelineStageChart } from "./analytics/pipeline-stage-chart"
 import { LeadsBySubstatusChart } from "./analytics/leads-by-substatus-chart"
 import { ExecutivePerformanceTable } from "./analytics/executive-performance-table"
 import { toast } from "sonner"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
+import { Search } from "lucide-react"
 
 export function SupervisorDashboard() {
     // const [executives, setExecutives] = useState<UserProfile[]>([]) // Removed
-    const [allLeads, setAllLeads] = useState<Lead[]>([]) // Added state for leads
+    const [allLeads, setAllLeads] = useState<Lead[]>([]) 
+    const [usersMap, setUsersMap] = useState<Record<string, string>>({}) // Map UID to DisplayName
     const [loading, setLoading] = useState(true)
-    const [selectedLead, setSelectedLead] = useState<Lead | null>(null) // For dialog
-    const [isDialogOpen, setIsDialogOpen] = useState(false) // For dialog
+    const [selectedLead, setSelectedLead] = useState<Lead | null>(null) 
+    const [isDialogOpen, setIsDialogOpen] = useState(false) 
     const [stats, setStats] = useState({
         activeExecutives: 0,
         totalLeads: 0,
@@ -29,32 +38,57 @@ export function SupervisorDashboard() {
     const [analyticsData, setAnalyticsData] = useState<any>(null)
     const [performanceData, setPerformanceData] = useState<any[]>([])
     const [isResetting, setIsResetting] = useState(false)
+    const [executiveFilter, setExecutiveFilter] = useState<string>("all")
+
+    // Get unique executives from usersMap for the filter
+    const uniqueExecutives = Object.entries(usersMap)
+        .filter(([uid]) => allLeads.some(lead => lead.assignedTo === uid))
+        .map(([uid, name]) => ({ uid, name }))
+        .sort((a, b) => a.name.localeCompare(b.name))
+
+    // Enrich and Categorize Leads
+    const enrichedLeads = allLeads
+        .map(lead => ({
+            ...lead,
+            assignedToName: lead.assignedTo ? (usersMap[lead.assignedTo] || "Asignado") : null
+        }))
+        .filter(lead => executiveFilter === "all" || lead.assignedTo === executiveFilter)
+
+    const categoryLeads = {
+        nuevos: enrichedLeads.filter(l => l.status === 'nuevo' && !l.closerFollowUp?.markedAsLost),
+        activos: enrichedLeads.filter(l => 
+            ['contactado', 'no_contactado', 'contacto_no_efectivo', 'calificado'].includes(l.status) && 
+            !l.closerFollowUp?.markedAsLost
+        ),
+        finalizados: enrichedLeads.filter(l => l.status === 'rechazado' || l.closerFollowUp?.markedAsLost)
+    }
 
     useEffect(() => {
-        // Subscribe only to refresh leads stats if needed (usually handled by events)
         loadLeadsStats()
-        // const unsubscribe = usersService.subscribeToUsers... removed as we don't display users list here anymore
     }, [])
 
     const loadLeadsStats = async () => {
         try {
-            const leadsStats = await leadsService.getLeadsStats()
-            // Also fetch actual leads for the table
-            const leads = await leadsService.getAllLeads()
+            const [leadsStats, leads, allUsers, globalStats, performance] = await Promise.all([
+                leadsService.getLeadsStats(),
+                leadsService.getAllLeads(),
+                usersService.getAll(),
+                leadsService.getGlobalStats(),
+                usersService.getDailyUserActivity()
+            ])
+
+            // Create users map
+            const uMap: Record<string, string> = {}
+            allUsers.forEach(u => uMap[u.uid] = u.displayName || "Usuario")
+            setUsersMap(uMap)
+
             setAllLeads(leads)
-            
-            setStats(prev => ({
-                ...prev,
+            setStats({
+                activeExecutives: allUsers.filter(u => ['loan_executive', 'investment_executive', 'closer'].includes(u.role)).length,
                 totalLeads: leadsStats.totalLeads,
                 pendingLeads: leadsStats.pendingLeads
-            }))
-
-            // Fetch comprehensive analytics
-            const globalStats = await leadsService.getGlobalStats()
+            })
             setAnalyticsData(globalStats)
-
-            // Fetch performance data
-            const performance = await usersService.getDailyUserActivity()
             setPerformanceData(performance)
         } catch (error) {
             console.error("Error loading leads stats:", error)
@@ -69,7 +103,7 @@ export function SupervisorDashboard() {
     }
 
     const handleLeadUpdated = () => {
-        loadLeadsStats() // Refresh data
+        loadLeadsStats() 
     }
 
     const handleResetDatabase = async () => {
@@ -119,46 +153,117 @@ export function SupervisorDashboard() {
 
             <Tabs defaultValue="overview" className="space-y-4">
                 <TabsList>
-                    <TabsTrigger value="overview">Visión General</TabsTrigger>
+                    <TabsTrigger value="overview">Base de Datos Global</TabsTrigger>
                     <TabsTrigger value="analytics">Analítica</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="overview" className="space-y-4">
+                <TabsContent value="overview" className="space-y-8">
                     {/* Stats Grid */}
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         <DashboardStats
-                            title="Ejecutivos Activos"
+                            title="Asesores Activos"
                             value={loading ? "..." : stats.activeExecutives}
-                            description="Miembros del equipo asignados"
+                            description="Personal asignado a gestión"
                             icon={Users}
                             iconColor="text-blue-600"
                         />
                         <DashboardStats
                             title="Leads Totales"
                             value={loading ? "..." : stats.totalLeads}
-                            description="Todos los leads en el sistema"
+                            description="En toda la base de datos"
                             icon={PhoneCall}
                             iconColor="text-accent"
                         />
                         <DashboardStats
                             title="Leads Pendientes"
                             value={loading ? "..." : stats.pendingLeads}
-                            description="A la espera de primer contacto"
+                            description="Sin primer contacto"
                             icon={Clock}
                             iconColor="text-primary"
                         />
                     </div>
 
-                    {/* All Leads Table */}
-                    <div className="space-y-4">
-                        <h3 className="text-xl font-semibold">Base de Datos de Leads Global</h3>
-                        <div className="rounded-md border p-4">
-                            {loading ? (
-                                <p>Loading leads...</p>
-                            ) : (
-                                <LeadsTable leads={allLeads} onLeadClick={handleLeadClick} />
-                            )}
+                    {/* All Leads Table with Sub-Tabs */}
+                    <div className="space-y-6">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <h3 className="text-xl font-semibold">Base de Datos de Leads Global</h3>
+                            
+                            <div className="flex items-center gap-2 min-w-[240px]">
+                                <Search className="h-4 w-4 text-muted-foreground" />
+                                <Select value={executiveFilter} onValueChange={setExecutiveFilter}>
+                                    <SelectTrigger className="w-full bg-background">
+                                        <SelectValue placeholder="Filtrar por Ejecutivo" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Todos los Ejecutivos</SelectItem>
+                                        {uniqueExecutives.map(exec => (
+                                            <SelectItem key={exec.uid} value={exec.uid}>
+                                                {exec.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
+
+                        <Tabs defaultValue="activos" className="w-full">
+                            <TabsList className="bg-muted/50 mb-4">
+                                <TabsTrigger value="nuevos">
+                                    Nuevos
+                                    {categoryLeads.nuevos.length > 0 && (
+                                        <span className="ml-2 bg-accent text-white text-[10px] px-1.5 rounded-full">
+                                            {categoryLeads.nuevos.length}
+                                        </span>
+                                    )}
+                                </TabsTrigger>
+                                <TabsTrigger value="activos" className="relative">
+                                    En Seguimiento
+                                    {categoryLeads.activos.length > 0 && (
+                                        <span className="ml-2 bg-green-500 text-white text-[10px] px-1.5 rounded-full">
+                                            {categoryLeads.activos.length}
+                                        </span>
+                                    )}
+                                </TabsTrigger>
+                                <TabsTrigger value="finalizados">
+                                    Finalizados
+                                </TabsTrigger>
+                            </TabsList>
+
+                            {loading ? (
+                                <div className="py-12 text-center text-muted-foreground border rounded-md border-dashed">
+                                    Cargando base de datos global...
+                                </div>
+                            ) : (
+                                <>
+                                    <TabsContent value="nuevos" className="mt-0">
+                                        <LeadsTable leads={categoryLeads.nuevos} onLeadClick={handleLeadClick} />
+                                        {categoryLeads.nuevos.length === 0 && (
+                                            <div className="py-12 text-center border rounded-md border-dashed text-muted-foreground">
+                                                No hay leads nuevos en el sistema.
+                                            </div>
+                                        )}
+                                    </TabsContent>
+
+                                    <TabsContent value="activos" className="mt-0">
+                                        <LeadsTable leads={categoryLeads.activos} onLeadClick={handleLeadClick} />
+                                        {categoryLeads.activos.length === 0 && (
+                                            <div className="py-12 text-center border rounded-md border-dashed text-muted-foreground">
+                                                No hay leads en seguimiento activo.
+                                            </div>
+                                        )}
+                                    </TabsContent>
+
+                                    <TabsContent value="finalizados" className="mt-0">
+                                        <LeadsTable leads={categoryLeads.finalizados} onLeadClick={handleLeadClick} />
+                                        {categoryLeads.finalizados.length === 0 && (
+                                            <div className="py-12 text-center border rounded-md border-dashed text-muted-foreground">
+                                                No hay registros finalizados.
+                                            </div>
+                                        )}
+                                    </TabsContent>
+                                </>
+                            )}
+                        </Tabs>
                     </div>
                 </TabsContent>
 
