@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Search, Phone, Mail, MapPin, Download, UserPlus, FileText } from "lucide-react"
+import { Search, Phone, Mail, MapPin, Download, UserPlus, FileText, UserMinus } from "lucide-react"
 import { leadsService } from "@/features/leads/services/leads.service"
 import type { Lead } from "@/features/leads/types/leads.types"
 import { LeadDetailDialog } from "@/features/leads/components/lead-detail-dialog"
@@ -25,6 +25,7 @@ export function AppraisalReportsView() {
     const [investorPhone, setInvestorPhone] = useState("")
     const [searchingInvestor, setSearchingInvestor] = useState(false)
     const [statusFilter, setStatusFilter] = useState<"all" | "assigned" | "unassigned">("all")
+    const [isReleaseDialogOpen, setIsReleaseDialogOpen] = useState(false)
 
     useEffect(() => {
         loadAppraisals()
@@ -131,6 +132,26 @@ export function AppraisalReportsView() {
             window.open(reportUrl, '_blank')
         } else {
             toast.error("No hay reporte PDF disponible")
+        }
+    }
+
+    const handleReleaseInvestor = async () => {
+        if (!selectedLead?.id) return
+
+        try {
+            await leadsService.updateLead(selectedLead.id, {
+                appraisal: {
+                    ...selectedLead.appraisal,
+                    investorName: "",
+                    investorPhone: ""
+                }
+            })
+            setIsReleaseDialogOpen(false)
+            loadAppraisals()
+            toast.success("Inversionista liberado exitosamente")
+        } catch (error) {
+            console.error("Error releasing investor:", error)
+            toast.error("Error al liberar inversionista")
         }
     }
 
@@ -314,6 +335,20 @@ export function AppraisalReportsView() {
                                         <UserPlus className="mr-2 h-4 w-4" />
                                         {lead.appraisal?.investorName ? 'Reasignar Inversionista' : 'Asignar Inversionista'}
                                     </Button>
+                                    
+                                    {lead.appraisal?.investorName && (
+                                        <Button
+                                            variant="outline"
+                                            className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                                            onClick={() => {
+                                                setSelectedLead(lead)
+                                                setIsReleaseDialogOpen(true)
+                                            }}
+                                        >
+                                            <UserMinus className="mr-2 h-4 w-4" />
+                                            Liberar Inversionista
+                                        </Button>
+                                    )}
                                     <Button
                                         variant="ghost"
                                         className="w-full text-xs"
@@ -395,6 +430,36 @@ export function AppraisalReportsView() {
                         </Button>
                         <Button onClick={handleSaveInvestor}>
                             Guardar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Release Investor Confirmation Dialog */}
+            <Dialog open={isReleaseDialogOpen} onOpenChange={setIsReleaseDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Liberar Inversionista</DialogTitle>
+                        <DialogDescription>
+                            ¿Está seguro de que desea liberar al inversionista de este reporte? 
+                            El reporte volverá a estar disponible para asignación.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p className="text-sm font-medium">Inversionista actual: <span className="font-bold">{selectedLead?.appraisal?.investorName}</span></p>
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button
+                            variant="ghost"
+                            onClick={() => setIsReleaseDialogOpen(false)}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            onClick={handleReleaseInvestor}
+                        >
+                            Confirmar Liberación
                         </Button>
                     </DialogFooter>
                 </DialogContent>
