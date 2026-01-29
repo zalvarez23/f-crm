@@ -62,7 +62,7 @@ const items: { main: MenuItem[] } = {
           title: "Call Center",
           url: "/call-center",
           icon: PhoneCall,
-          allowedRoles: ['supervisor', 'administrator', 'loan_executive'],
+          allowedRoles: ['supervisor', 'administrator', 'loan_executive', 'investment_executive'],
         },
         {
           title: "Tasaciones",
@@ -149,23 +149,23 @@ export function AppSidebar() {
                 {user && (
                     <div className="flex flex-col gap-4 p-4 pb-2">
                         <div className="px-1 py-1">
-                            <h2 className="text-lg font-bold tracking-tight text-[#0c2648] flex items-center gap-2">
-                                <div className="h-2 w-2 rounded-full bg-accent" />
+                            <h2 className="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                                <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
                                 Intercapital Perú
                             </h2>
                         </div>
                         <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9 border shadow-sm">
+                            <Avatar className="h-9 w-9 border border-white/20 shadow-sm">
                                 <AvatarImage src={user.photoURL} alt={user.displayName} />
-                                <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                                <AvatarFallback className="bg-white/10 text-white text-xs font-semibold">
                                     {getInitials(user.displayName)}
                                 </AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col gap-0.5 overflow-hidden">
+                            <div className="flex flex-col gap-0.5 overflow-hidden text-white">
                                 <span className="text-sm font-semibold leading-none truncate">
                                     {user.displayName || "Usuario"}
                                 </span>
-                                <span className="text-xs text-muted-foreground truncate font-medium">
+                                <span className="text-xs text-blue-200/70 truncate font-medium">
                                     {roleLabels[user.role]}
                                 </span>
                             </div>
@@ -225,12 +225,23 @@ export function AppSidebar() {
                     <SidebarGroupLabel>Menú Principal</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {items.main.map((item) => {
-                                if (item.allowedRoles && user && !item.allowedRoles.includes(user.role)) {
-                                    return null
-                                }
+                            {items.main
+                                .filter(item => {
+                                    // 1. Hide Dashboard for Executives
+                                    if (item.title === "Dashboard" && user && (user.role === 'loan_executive' || user.role === 'investment_executive')) {
+                                        return false
+                                    }
+                                    // 2. Standard role check
+                                    if (item.allowedRoles && user && !item.allowedRoles.includes(user.role)) {
+                                        return false
+                                    }
+                                    return true
+                                })
+                                .map((item) => {
+                                    const isExec = user && (user.role === 'loan_executive' || user.role === 'investment_executive')
+                                    const itemUrl = (isExec && item.title === "Call Center") ? "/" : item.url
 
-                                if (item.items) {
+                                    if (item.items) {
                                     return (
                                         <Collapsible key={item.title} asChild defaultOpen className="group/collapsible">
                                             <SidebarMenuItem>
@@ -270,8 +281,12 @@ export function AppSidebar() {
 
                                 return (
                                     <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton asChild isActive={location.pathname === item.url}>
-                                            <Link to={item.url}>
+                                        <SidebarMenuButton 
+                                            asChild 
+                                            isActive={location.pathname === itemUrl}
+                                            tooltip={item.title}
+                                        >
+                                            <Link to={itemUrl}>
                                                 {item.icon && <item.icon />}
                                                 <span>{item.title}</span>
                                             </Link>
